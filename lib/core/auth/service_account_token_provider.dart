@@ -13,9 +13,8 @@ class ServiceAccountTokenProvider implements AccessTokenProvider {
   ServiceAccountTokenProvider({
     required this.key,
     required http.Client httpClient,
-    Clock clock = const SystemClock(),
+    this._clock = const SystemClock(),
   }) : _http = httpClient,
-       _clock = clock,
        _signingKey = RSAPrivateKey(key.privateKeyPem);
 
   static final Uri tokenEndpoint = Uri.parse(

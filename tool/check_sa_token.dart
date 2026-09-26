@@ -5,7 +5,7 @@ import 'package:fcm_studio/core/auth/service_account_key.dart';
 import 'package:fcm_studio/core/auth/service_account_token_provider.dart';
 import 'package:http/http.dart' as http;
 
-/// Usage: dart run tool/check_sa_token.dart <service-account.json>
+/// Usage: `dart run tool/check_sa_token.dart <service-account.json>`
 /// Prints whether Google issues a token for the key. Never prints the token itself.
 Future<void> main(List<String> args) async {
   if (args.length != 1) {
