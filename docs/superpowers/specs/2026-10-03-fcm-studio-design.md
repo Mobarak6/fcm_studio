@@ -397,7 +397,7 @@ All adb calls go through an injectable **`ProcessRunner`**. Every call has a 10 
 | Output | Meaning | UI |
 |---|---|---|
 | XML | Parse the file (below) | Show the token(s) |
-| `package not debuggable` | Release build | Offer Step 2 |
+| `run-as: package not debuggable: <package>` (seen on the Redmi 14C, Android 16, 2026-10-03) | Release build | Offer Step 2 |
 | `No such file or directory` | No token yet | "Open the app once so it gets a token", with a **Launch app** button, then **Retry** |
 | `Package '<p>' is unknown` | Not installed | Error message |
 
@@ -487,6 +487,8 @@ This step runs only after the user confirms, because it restarts the app.
 | M3 | **Devices.** `AdbLocator`, `DevicesBloc`, packages, run-as token, logcat fallback, sender-ID check | The success test works fully on the Redmi in under 30 s |
 | M4 | **Google sign-in.** Desktop loopback, web popup, project list import | A teammate adds projects and sends without any key file |
 | M5 | **Release builds.** macOS `.app` zip, Windows zip, static web build, README (setup, OAuth, manual checklist) | A teammate installs it from the README alone |
+
+**M0 token-file capture (2026-10-03):** deferred to the start of M3. It needs a debug build that uses `firebase_messaging` on the Redmi, plus the user running the capture commands, and nothing in M1 depends on it.
 
 ## 14. Open risks
 
