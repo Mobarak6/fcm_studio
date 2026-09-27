@@ -235,7 +235,7 @@ The form is a structured editor for common paths. **Fields it doesn't cover are 
   - the error and its line are shown;
   - the Form tab is read-only;
   - Send is disabled.
-- If `re_editor` doesn't work acceptably on web, the fallback is a monospace `TextField` with the same validation. This is checked in milestone 0.
+- If `re_editor` doesn't work acceptably on web, the fallback is a monospace `TextField` with the same validation. *Status 2026-10-03:* the web build with `re_editor` 0.10.0 compiles and `re_editor` declares web support. Hands-on checks in Chrome (typing, selection, copy/paste, undo, scrolling) are still to be done by the user, and the fallback is applied only if they fail.
 
 ### 5.5 Layout
 
@@ -489,6 +489,18 @@ This step runs only after the user confirms, because it restarts the app.
 | M5 | **Release builds.** macOS `.app` zip, Windows zip, static web build, README (setup, OAuth, manual checklist) | A teammate installs it from the README alone |
 
 **M0 token-file capture (2026-10-03):** deferred to the start of M3. It needs a debug build that uses `firebase_messaging` on the Redmi, plus the user running the capture commands, and nothing in M1 depends on it.
+
+**M0/M1 status (2026-10-03):**
+- *Done:*
+  - All M1 code, with 115 automated tests passing and a clean `flutter analyze`.
+  - The macOS debug build and the web build both succeed.
+  - The macOS app launches and creates its database with no errors.
+  - `tool/check_sa_token.dart` reaches Google's token endpoint. A throwaway key gets `invalid_grant: account not found`, which means the signed assertion's format is accepted.
+- *Pending, needs the user:*
+  - The real service account key check (`dart run tool/check_sa_token.dart <key.json>`).
+  - The M1 end-to-end send to the Redmi from the macOS app, including Keychain persistence after a relaunch.
+  - The hands-on `re_editor` check in Chrome, and the web reload / "Remember" flow.
+  - The M0 token-file capture (moved to M3).
 
 ## 14. Open risks
 
