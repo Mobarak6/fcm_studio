@@ -46,4 +46,13 @@ void main() {
     expect(Target.of(TargetKind.topic, 'a'), const TopicTarget('a'));
     expect(Target.of(TargetKind.condition, 'a'), const ConditionTarget('a'));
   });
+
+  test('normalized is the value that goes to FCM', () {
+    expect(const TokenTarget(' "abc def" ').normalized, 'abcdef');
+    expect(const TopicTarget('/topics/news').normalized, 'news');
+    expect(
+      const ConditionTarget("  'a' in topics ").normalized,
+      "'a' in topics",
+    );
+  });
 }

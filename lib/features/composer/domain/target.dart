@@ -18,6 +18,9 @@ sealed class Target extends Equatable {
 
   TargetKind get kind;
 
+  /// The value as it goes to FCM: what [toMessageField] puts in the message.
+  String get normalized;
+
   Map<String, String> toMessageField();
 
   List<RenderIssue> validate();
@@ -37,6 +40,9 @@ final class TokenTarget extends Target {
 
   @override
   TargetKind get kind => TargetKind.token;
+
+  @override
+  String get normalized => token;
 
   @override
   Map<String, String> toMessageField() => {'token': token};
@@ -65,6 +71,9 @@ final class TopicTarget extends Target {
 
   @override
   TargetKind get kind => TargetKind.topic;
+
+  @override
+  String get normalized => name;
 
   @override
   Map<String, String> toMessageField() => {'topic': name};
@@ -98,6 +107,9 @@ final class ConditionTarget extends Target {
 
   @override
   TargetKind get kind => TargetKind.condition;
+
+  @override
+  String get normalized => expression;
 
   @override
   Map<String, String> toMessageField() => {'condition': expression};

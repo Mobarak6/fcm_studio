@@ -1,9 +1,13 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:fcm_studio/core/utils/clock.dart';
+import 'package:fcm_studio/core/utils/ids.dart';
 import 'package:fcm_studio/features/composer/domain/fcm_rules.dart';
+import 'package:fcm_studio/features/composer/domain/placeholders.dart';
 import 'package:fcm_studio/features/composer/domain/render_issue.dart';
 import 'package:fcm_studio/features/composer/domain/target.dart';
+import 'package:fcm_studio/features/presets/domain/variable_def.dart';
 
 export 'package:fcm_studio/features/composer/domain/render_issue.dart';
 
@@ -13,6 +17,7 @@ class RenderResult extends Equatable {
     this.notes = const [],
     this.warnings = const [],
     this.errors = const [],
+    this.undefinedPlaceholders = const [],
   });
 
   /// The exact body for `messages:send`. Null when there are errors.
@@ -21,19 +26,38 @@ class RenderResult extends Equatable {
   final List<RenderIssue> warnings;
   final List<RenderIssue> errors;
 
+  /// Placeholder keys the template uses that are neither defined nor built
+  /// in, in order of first use. The Variables quick fix offers to add them.
+  final List<String> undefinedPlaceholders;
+
   bool get canSend => request != null && errors.isEmpty;
 
   @override
-  List<Object?> get props => [request, notes, warnings, errors];
+  List<Object?> get props => [
+    request,
+    notes,
+    warnings,
+    errors,
+    undefinedPlaceholders,
+  ];
 }
 
-/// Turns a template and a target into the request body FCM expects (spec §5.2).
+/// Turns a template, its variables and a target into the request body FCM
+/// expects (spec §5.2).
 class MessageRenderer {
-  const MessageRenderer();
+  const MessageRenderer({
+    this._clock = const SystemClock(),
+    this._newId = newUuid,
+  });
+
+  final Clock _clock;
+  final IdGenerator _newId;
 
   RenderResult render({
     required Map<String, Object?> template,
     required Target target,
+    List<VariableDef> variables = const [],
+    Map<String, String> values = const {},
     bool validateOnly = false,
   }) {
     final notes = <RenderIssue>[];
@@ -52,8 +76,31 @@ class MessageRenderer {
     }
     errors.addAll(target.validate());
 
-    final body = jsonDecode(jsonEncode(template)) as Map<String, Object?>
-      ..removeWhere((key, _) => Target.messageFields.contains(key));
+    final definitions = {for (final v in variables) v.key: v};
+    final usedKeys = Placeholders.keysIn(template);
+    final undefined = [
+      for (final key in usedKeys)
+        if (!definitions.containsKey(key) && !BuiltinValues.names.contains(key))
+          key,
+    ];
+    if (usedKeys.any(BuiltinValues.names.contains)) {
+      notes.add(
+        const RenderIssue(
+          'placeholders',
+          '{{now_iso}}, {{now_ms}} and {{uuid}} get new values each time you send.',
+        ),
+      );
+    }
+
+    final body =
+        PlaceholderSubstitution(
+            definitions: definitions,
+            values: values,
+            builtins: BuiltinValues(now: _clock.now(), uuid: _newId()),
+            notes: notes,
+            errors: errors,
+          ).apply(template)
+          ..removeWhere((key, _) => Target.messageFields.contains(key));
 
     final data = body['data'];
     if (data != null) {
@@ -84,12 +131,18 @@ class MessageRenderer {
     }
 
     if (errors.isNotEmpty) {
-      return RenderResult(notes: notes, warnings: warnings, errors: errors);
+      return RenderResult(
+        notes: notes,
+        warnings: warnings,
+        errors: errors,
+        undefinedPlaceholders: undefined,
+      );
     }
     return RenderResult(
       request: {if (validateOnly) 'validate_only': true, 'message': message},
       notes: notes,
       warnings: warnings,
+      undefinedPlaceholders: undefined,
     );
   }
 

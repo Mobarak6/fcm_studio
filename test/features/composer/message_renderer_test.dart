@@ -1,6 +1,9 @@
 import 'package:fcm_studio/features/composer/domain/message_renderer.dart';
 import 'package:fcm_studio/features/composer/domain/target.dart';
+import 'package:fcm_studio/features/presets/domain/variable_def.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/fixed_clock.dart';
 
 void main() {
   const renderer = MessageRenderer();
@@ -176,5 +179,157 @@ void main() {
     );
     expect(result.warnings.map((w) => w.path), contains('message'));
     expect(result.canSend, isTrue);
+  });
+
+  group('placeholders', () {
+    final clock = FixedClock(DateTime.utc(2026, 10, 3, 12));
+    final placeholderRenderer = MessageRenderer(
+      clock: clock,
+      newId: () => 'id-1',
+    );
+    const title = VariableDef(key: 'title', label: 'Title', required: true);
+    const badge = VariableDef(
+      key: 'badge',
+      label: 'Badge',
+      type: VariableType.number,
+    );
+    const urgent = VariableDef(
+      key: 'urgent',
+      type: VariableType.boolean,
+      defaultValue: 'false',
+    );
+
+    RenderResult renderWith(
+      Map<String, Object?> template,
+      Map<String, String> values,
+    ) => placeholderRenderer.render(
+      template: template,
+      target: const TopicTarget('news'),
+      variables: const [title, badge, urgent],
+      values: values,
+    );
+
+    test('fills placeholders from values, then from defaults', () {
+      final result = renderWith(
+        {
+          'notification': {
+            'title': '{{title}}',
+            'body': 'Urgent: {{ urgent }}',
+          },
+        },
+        {'title': 'Hi'},
+      );
+      expect(message(result)['notification'], {
+        'title': 'Hi',
+        'body': 'Urgent: false',
+      });
+    });
+
+    test('a lone number or boolean placeholder keeps its type', () {
+      final result = renderWith(
+        {
+          'notification': notification,
+          'apns': {
+            'payload': {
+              'aps': {'badge': '{{badge}}'},
+            },
+          },
+          'android': {'direct_boot_ok': '{{urgent}}'},
+        },
+        {'badge': '3', 'urgent': 'true'},
+      );
+      expect(message(result)['apns'], {
+        'payload': {
+          'aps': {'badge': 3},
+        },
+      });
+      expect(message(result)['android'], {'direct_boot_ok': true});
+    });
+
+    test('a placeholder inside longer text is inserted as text', () {
+      final result = renderWith(
+        {
+          'notification': {'title': 'You have {{badge}} new'},
+        },
+        {'badge': '3'},
+      );
+      expect(message(result)['notification'], {'title': 'You have 3 new'});
+    });
+
+    test('built-in values need no definition', () {
+      final result = renderWith({
+        'notification': notification,
+        'data': {'at': '{{now_iso}}', 'ms': '{{now_ms}}', 'id': '{{uuid}}'},
+      }, {});
+      expect(message(result)['data'], {
+        'at': '2026-10-03T12:00:00.000Z',
+        'ms': '${clock.now().millisecondsSinceEpoch}',
+        'id': 'id-1',
+      });
+      expect(result.notes.map((n) => n.path), contains('placeholders'));
+    });
+
+    test('an unknown placeholder blocks sending and is listed once', () {
+      final result = renderWith({
+        'notification': notification,
+        'data': {'order': '{{order_id}}', 'again': '{{order_id}}'},
+      }, {});
+      expect(result.canSend, isFalse);
+      expect(result.errors.single.path, 'data.order');
+      expect(
+        result.errors.single.message,
+        'Unknown placeholder {{order_id}}. Add it under Variables.',
+      );
+      expect(result.undefinedPlaceholders, ['order_id']);
+    });
+
+    test('an empty required value blocks sending', () {
+      final result = renderWith(
+        {
+          'notification': {'title': '{{title}}'},
+        },
+        {'title': '  '},
+      );
+      expect(result.errors.single.message, 'Fill in "Title" ({{title}}).');
+    });
+
+    test('a value that is not a number blocks sending instead of crashing', () {
+      final result = renderWith(
+        {
+          'notification': notification,
+          'apns': {
+            'payload': {
+              'aps': {'badge': '{{badge}}'},
+            },
+          },
+        },
+        {'badge': '12a'},
+      );
+      expect(result.canSend, isFalse);
+      expect(
+        result.errors.single.message,
+        '"Badge" must be a number, not "12a".',
+      );
+    });
+
+    test('an empty optional typed placeholder removes its field', () {
+      final result = renderWith({
+        'notification': notification,
+        'apns': {
+          'payload': {
+            'aps': {'badge': '{{badge}}', 'sound': 'default'},
+          },
+        },
+      }, {});
+      expect(message(result)['apns'], {
+        'payload': {
+          'aps': {'sound': 'default'},
+        },
+      });
+      expect(
+        result.notes.map((n) => n.message),
+        contains('Removed because {{badge}} is empty.'),
+      );
+    });
   });
 }
