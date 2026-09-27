@@ -1,0 +1,76 @@
+{
+  "format": "fcm-studio.presets",
+  "version": 1,
+  "exportedAt": "2026-10-03T00:00:00.000Z",
+  "presets": [
+    {
+      "id": "builtin.simple",
+      "name": "Simple notification",
+      "description": "A title and a body.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Hello from FCM Studio"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": false, "defaultValue": "If you can read this, it works."}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"}
+      },
+      "createdAt": "2026-10-03T00:00:00.000Z",
+      "updatedAt": "2026-10-03T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.image",
+      "name": "Notification with image",
+      "description": "A notification with a large image. iOS needs a notification service extension to show it.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Hello from FCM Studio"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": false, "defaultValue": "This one has a picture."},
+        {"key": "image_url", "label": "Image URL (https)", "type": "text", "required": true, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image_url}}"},
+        "apns": {
+          "payload": {"aps": {"mutable-content": 1}},
+          "fcm_options": {"image": "{{image_url}}"}
+        }
+      },
+      "createdAt": "2026-10-03T00:00:00.000Z",
+      "updatedAt": "2026-10-03T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.notification_data",
+      "name": "Notification + data",
+      "description": "A notification plus key/value data the app reads when it is tapped.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Your order has shipped"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": false, "defaultValue": "Tap to see the details."},
+        {"key": "type", "label": "Type", "type": "text", "required": false, "defaultValue": "order_update"},
+        {"key": "id", "label": "ID", "type": "text", "required": false, "defaultValue": "42"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {"type": "{{type}}", "id": "{{id}}", "sent_at": "{{now_iso}}"},
+        "android": {"priority": "high"}
+      },
+      "createdAt": "2026-10-03T00:00:00.000Z",
+      "updatedAt": "2026-10-03T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.data_only",
+      "name": "Data only (silent / background)",
+      "description": "No visible notification. The app receives the data in the background.",
+      "variables": [
+        {"key": "type", "label": "Type", "type": "text", "required": false, "defaultValue": "sync"}
+      ],
+      "template": {
+        "data": {"type": "{{type}}", "sent_at": "{{now_iso}}"},
+        "android": {"priority": "high"},
+        "apns": {
+          "headers": {"apns-priority": "5", "apns-push-type": "background"},
+          "payload": {"aps": {"content-available": 1}}
+        }
+      },
+      "createdAt": "2026-10-03T00:00:00.000Z",
+      "updatedAt": "2026-10-03T00:00:00.000Z"
+    }
+  ]
+}
