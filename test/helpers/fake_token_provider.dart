@@ -1,4 +1,6 @@
 import 'package:fcm_studio/core/auth/access_token_provider.dart';
+import 'package:fcm_studio/features/projects/domain/access_token_resolver.dart';
+import 'package:fcm_studio/features/projects/domain/project.dart';
 
 class FakeTokenProvider implements AccessTokenProvider {
   FakeTokenProvider({this.headers = const {}, this.error});
@@ -19,4 +21,17 @@ class FakeTokenProvider implements AccessTokenProvider {
 
   @override
   Map<String, String> extraHeaders(String projectId) => headers;
+}
+
+class FakeResolver implements AccessTokenResolver {
+  FakeResolver({this.error});
+
+  final AuthException? error;
+
+  @override
+  Future<AccessTokenProvider> providerFor(Project project) async {
+    final failure = error;
+    if (failure != null) throw failure;
+    return FakeTokenProvider();
+  }
 }
