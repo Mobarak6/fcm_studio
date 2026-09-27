@@ -212,5 +212,29 @@ void main() {
       expect(result.single.builtIn, isFalse);
       expect(result.single.updatedAt, created);
     });
+
+    test('replace never gives two imported presets the same id', () {
+      final result = PresetCodec.resolve(
+        existing: [named('A', id: 'mine')],
+        incoming: [named('A'), named('A')],
+        choice: ImportConflictChoice.replace,
+        newId: newId,
+        now: created,
+      );
+      expect(result.map((p) => p.id), ['mine', 'new-1']);
+      expect(result.map((p) => p.name), ['A', 'A (2)']);
+    });
+
+    test('a clash inside the file is kept as a copy on replace', () {
+      final result = PresetCodec.resolve(
+        existing: const [],
+        incoming: [named('B'), named('B')],
+        choice: ImportConflictChoice.replace,
+        newId: newId,
+        now: created,
+      );
+      expect(result.map((p) => p.name), ['B', 'B (2)']);
+      expect(result.map((p) => p.id).toSet(), hasLength(2));
+    });
   });
 }

@@ -102,10 +102,12 @@ abstract final class PresetCodec {
     );
   }
 
-  /// The presets to store for an import. Each gets a new id and is never
-  /// built-in. A name clash is kept with " (2)", replaces the user's preset,
-  /// or is skipped. Built-in presets are never replaced: a clash with one is
-  /// kept as a copy.
+  /// The presets to store for an import. Imported presets are never built-in
+  /// and get a new id, unless they replace an existing user preset, which
+  /// keeps its id and createdAt. A name clash (with an existing preset or an
+  /// earlier one in the file) is skipped, or kept with " (2)". Replace only
+  /// applies to an existing non-built-in preset, once; any other clash is kept
+  /// as a copy. Result ids are unique.
   static List<Preset> resolve({
     required List<Preset> existing,
     required List<Preset> incoming,
@@ -114,17 +116,19 @@ abstract final class PresetCodec {
     required DateTime now,
   }) {
     final taken = {for (final p in existing) normalizeName(p.name): p};
+    final replaceable = {
+      for (final p in existing)
+        if (!p.builtIn) normalizeName(p.name): p,
+    };
     final result = <Preset>[];
     for (final preset in incoming) {
-      final clash = taken[normalizeName(preset.name)];
+      final key = normalizeName(preset.name);
+      final clash = taken[key];
       if (clash != null && choice == ImportConflictChoice.skip) {
         continue;
       }
-      final replaced =
-          clash != null &&
-              choice == ImportConflictChoice.replace &&
-              !clash.builtIn
-          ? clash
+      final replaced = clash != null && choice == ImportConflictChoice.replace
+          ? replaceable.remove(key)
           : null;
       final stored = preset.copyWith(
         id: replaced?.id ?? newId(),
