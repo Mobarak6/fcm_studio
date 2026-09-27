@@ -230,7 +230,7 @@ The form is a structured editor for common paths. **Fields it doesn't cover are 
 ### 5.4 JSON tab
 
 - A code editor (`re_editor` with JSON highlighting) on the template.
-- Edits are parsed after a 300 ms pause.
+- Edits are parsed as you type (changed 2026-10-03 from a 300 ms pause), so Send or Cmd/Ctrl+Enter right after typing always sends what is on screen.
 - While the JSON is invalid:
   - the error and its line are shown;
   - the Form tab is read-only;
@@ -250,7 +250,7 @@ The form is a structured editor for common paths. **Fields it doesn't cover are 
   - the **Result** panel.
 - Below 1,000 px wide, the three columns become tabs.
 - Material 3, following the system light/dark setting.
-- **Shortcuts:** Cmd/Ctrl+Enter sends, Cmd/Ctrl+S saves the preset.
+- **Shortcuts:** Cmd/Ctrl+Enter sends (also from inside the JSON editor, whose own Cmd/Ctrl+Enter "new line" binding is removed; holding the keys sends once), Cmd/Ctrl+S saves the preset.
 
 ## 6. Presets
 

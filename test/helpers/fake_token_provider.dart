@@ -26,7 +26,8 @@ class FakeTokenProvider implements AccessTokenProvider {
 class FakeResolver implements AccessTokenResolver {
   FakeResolver({this.error});
 
-  final AuthException? error;
+  /// Thrown from [providerFor]; any exception type, to simulate unexpected failures too.
+  final Object? error;
 
   @override
   Future<AccessTokenProvider> providerFor(Project project) async {

@@ -141,4 +141,32 @@ void main() {
     expect(requests, 0);
     expect(cubit.state.sendStatus, SendStatus.idle);
   });
+
+  test(
+    'an unexpected failure ends the send instead of leaving it stuck',
+    () async {
+      final cubit = build(
+        auth: FakeResolver(error: Exception('Keychain access denied')),
+      )..setTargetValue(token);
+
+      await cubit.send(testProject);
+
+      expect(cubit.state.sendStatus, SendStatus.done);
+      expect(
+        cubit.state.lastResult,
+        isA<FcmSendFailure>()
+            .having(
+              (r) => r.error.transport,
+              'transport',
+              FcmTransportError.unexpected,
+            )
+            .having(
+              (r) => r.error.message,
+              'message',
+              contains('Keychain access denied'),
+            ),
+      );
+      expect(cubit.state.canSend, isTrue);
+    },
+  );
 }

@@ -89,6 +89,11 @@ class ServiceAccountTokenProvider implements AccessTokenProvider {
       throw AuthException(
         'Network error while getting an access token: ${redact(e.message)}',
       );
+    } on Exception catch (e) {
+      // e.g. a TLS HandshakeException when a proxy intercepts HTTPS.
+      throw AuthException(
+        'Network error while getting an access token: ${redact('$e')}',
+      );
     }
 
     final body = _decode(response.body);

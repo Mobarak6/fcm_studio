@@ -1,6 +1,7 @@
 import 'package:fcm_studio/core/auth/access_token_provider.dart';
 import 'package:fcm_studio/core/auth/service_account_key.dart';
 import 'package:fcm_studio/core/firebase/firebase_projects_api.dart';
+import 'package:fcm_studio/core/utils/redact.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_state.dart';
 import 'package:fcm_studio/features/projects/data/project_auth_registry.dart';
 import 'package:fcm_studio/features/projects/data/projects_repository.dart';
@@ -75,6 +76,9 @@ class ProjectsCubit extends Cubit<ProjectsState> {
     } on AuthException catch (e) {
       _authRegistry.forget(credential);
       return AddProjectFailure(e.message);
+    } catch (e) {
+      _authRegistry.forget(credential);
+      return AddProjectFailure('Could not check the key: ${redact('$e')}');
     }
 
     // Project details are optional: any failure here just leaves them blank.
@@ -96,13 +100,19 @@ class ProjectsCubit extends Cubit<ProjectsState> {
       credential: credential,
     );
 
-    await _repository.saveServiceAccountKey(key, persist: persistKey);
-    await _repository.save(project);
-    if (existing != null && existing.credential != credential) {
-      _authRegistry.forget(existing.credential);
-      await _repository.deleteSecretIfUnused(existing.credential);
+    try {
+      await _repository.saveServiceAccountKey(key, persist: persistKey);
+      await _repository.save(project);
+      if (existing != null && existing.credential != credential) {
+        _authRegistry.forget(existing.credential);
+        await _repository.deleteSecretIfUnused(existing.credential);
+      }
+      await _repository.writeSelectedProjectId(project.id);
+    } catch (e) {
+      // e.g. a denied Keychain prompt: report it instead of leaving the dialog spinning.
+      _authRegistry.forget(credential);
+      return AddProjectFailure('Could not save the project: ${redact('$e')}');
     }
-    await _repository.writeSelectedProjectId(project.id);
 
     final projects = [
       ...state.projects.where((p) => p.id != project.id),

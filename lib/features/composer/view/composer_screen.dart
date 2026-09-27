@@ -15,9 +15,17 @@ class ComposerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(LogicalKeyboardKey.enter, meta: true): () =>
+        const SingleActivator(
+          LogicalKeyboardKey.enter,
+          meta: true,
+          includeRepeats: false,
+        ): () =>
             sendSelected(context),
-        const SingleActivator(LogicalKeyboardKey.enter, control: true): () =>
+        const SingleActivator(
+          LogicalKeyboardKey.enter,
+          control: true,
+          includeRepeats: false,
+        ): () =>
             sendSelected(context),
       },
       child: Focus(

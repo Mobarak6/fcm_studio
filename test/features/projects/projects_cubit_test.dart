@@ -12,6 +12,12 @@ import '../../helpers/fake_google.dart';
 import '../../helpers/project_fixture.dart';
 import '../../helpers/service_account_fixture.dart';
 
+class _FailingSecretStore extends MemorySecretStore {
+  @override
+  Future<void> write(String key, String value, {bool persist = true}) async =>
+      throw Exception('Keychain access denied');
+}
+
 void main() {
   late AppDatabase database;
   late MemorySecretStore secrets;
@@ -174,5 +180,37 @@ void main() {
 
     await cubit.setProjectNumber(testProjectId, '');
     expect(cubit.state.selected?.projectNumber, isNull);
+  });
+
+  test('a storage failure while adding is reported, not thrown', () async {
+    final failingRepository = ProjectsRepository(
+      database: database,
+      secrets: _FailingSecretStore(),
+    );
+    final httpClient = fakeGoogle();
+    final cubit = ProjectsCubit(
+      repository: failingRepository,
+      authRegistry: ProjectAuthRegistry(
+        repository: failingRepository,
+        httpClient: httpClient,
+      ),
+      firebaseApi: FirebaseProjectsApi(httpClient: httpClient),
+    );
+    await cubit.load();
+
+    final result = await cubit.addFromServiceAccount(
+      serviceAccountJson(),
+      persistKey: true,
+    );
+
+    expect(
+      result,
+      isA<AddProjectFailure>().having(
+        (r) => r.message,
+        'message',
+        contains('Keychain access denied'),
+      ),
+    );
+    expect(cubit.state.projects, isEmpty);
   });
 }

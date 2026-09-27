@@ -44,8 +44,29 @@ class FcmErrorExplainer {
           explanation: error.message ?? 'Google did not issue an access token.',
           action: 'Add the project again with its service account key file.',
         );
+      case FcmTransportError.unexpected:
+        return ErrorExplanation(
+          title: 'Something went wrong',
+          explanation: error.message ?? 'An unexpected error occurred.',
+          action: 'Try again. If it keeps happening, restart FCM Studio.',
+        );
       case FcmTransportError.none:
         break;
+    }
+
+    final status = error.httpStatus;
+    if (!error.fromGoogle && status != null && status < 500) {
+      final body = error.message;
+      return ErrorExplanation(
+        title: 'Unexpected response (HTTP $status)',
+        explanation:
+            'This response did not come from FCM. A proxy, firewall, VPN or captive '
+            'portal may be intercepting requests to fcm.googleapis.com.'
+            '${body == null ? '' : '\n\nResponse: $body'}',
+        action:
+            'Check your network (sign in to the Wi-Fi portal, or try without the '
+            'VPN or proxy), then retry.',
+      );
     }
 
     switch (error.fcmErrorCode ?? error.status) {
@@ -113,7 +134,6 @@ class FcmErrorExplainer {
       );
     }
 
-    final status = error.httpStatus;
     if (status == 401) {
       return const ErrorExplanation(
         title: 'Access token rejected',

@@ -1,18 +1,18 @@
-import 'dart:async';
-
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:re_editor/re_editor.dart';
 import 'package:re_highlight/languages/json.dart';
 import 'package:re_highlight/styles/atom-one-dark.dart';
 import 'package:re_highlight/styles/atom-one-light.dart';
 
-/// The JSON editor for the message template. Edits reach the cubit after a 300 ms pause.
+/// The JSON editor for the message template.
+///
+/// Every edit reaches the cubit immediately, so Send (or Cmd/Ctrl+Enter) right
+/// after typing always sends what is on screen.
 class JsonTemplateEditor extends StatefulWidget {
   const JsonTemplateEditor({super.key});
-
-  static const debounce = Duration(milliseconds: 300);
 
   @override
   State<JsonTemplateEditor> createState() => _JsonTemplateEditorState();
@@ -20,7 +20,6 @@ class JsonTemplateEditor extends StatefulWidget {
 
 class _JsonTemplateEditorState extends State<JsonTemplateEditor> {
   late final CodeLineEditingController _controller;
-  Timer? _debounce;
 
   @override
   void initState() {
@@ -32,17 +31,11 @@ class _JsonTemplateEditorState extends State<JsonTemplateEditor> {
   }
 
   void _onChanged() {
-    _debounce?.cancel();
-    _debounce = Timer(JsonTemplateEditor.debounce, () {
-      if (mounted) {
-        context.read<ComposerCubit>().updateTemplateText(_controller.text);
-      }
-    });
+    context.read<ComposerCubit>().updateTemplateText(_controller.text);
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _controller
       ..removeListener(_onChanged)
       ..dispose();
@@ -66,6 +59,7 @@ class _JsonTemplateEditorState extends State<JsonTemplateEditor> {
         Expanded(
           child: CodeEditor(
             controller: _controller,
+            shortcutsActivatorsBuilder: const _SendKeyFreeShortcuts(),
             style: CodeEditorStyle(
               fontSize: 13,
               codeTheme: CodeHighlightTheme(
@@ -94,5 +88,26 @@ class _JsonTemplateEditorState extends State<JsonTemplateEditor> {
         ),
       ],
     );
+  }
+}
+
+/// re_editor's default shortcuts, minus Cmd/Ctrl+Enter as "new line", so that
+/// combination reaches the screen's Send shortcut.
+class _SendKeyFreeShortcuts extends DefaultCodeShortcutsActivatorsBuilder {
+  const _SendKeyFreeShortcuts();
+
+  static bool _isSendKey(ShortcutActivator activator) =>
+      activator is SingleActivator &&
+      (activator.meta || activator.control) &&
+      (activator.trigger == LogicalKeyboardKey.enter ||
+          activator.trigger == LogicalKeyboardKey.numpadEnter);
+
+  @override
+  List<ShortcutActivator>? build(CodeShortcutType type) {
+    final activators = super.build(type);
+    if (type != CodeShortcutType.newLine || activators == null) {
+      return activators;
+    }
+    return activators.where((activator) => !_isSendKey(activator)).toList();
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fcm_studio/core/auth/access_token_provider.dart';
 import 'package:fcm_studio/core/fcm/fcm_client.dart';
@@ -227,6 +228,57 @@ void main() {
             'message',
             'Google rejected this key',
           ),
+    );
+  });
+
+  test(
+    'reports a TLS failure (e.g. an intercepting proxy) as a network error',
+    () async {
+      final client = FcmClient(
+        httpClient: MockClient(
+          (_) async => throw HandshakeException(
+            'CERTIFICATE_VERIFY_FAILED: self signed certificate',
+          ),
+        ),
+      );
+      final result = await client.send(
+        projectId: projectId,
+        body: body,
+        auth: FakeTokenProvider(),
+      );
+      expect(
+        result,
+        isA<FcmSendFailure>()
+            .having(
+              (r) => r.error.transport,
+              'transport',
+              FcmTransportError.network,
+            )
+            .having(
+              (r) => r.error.message,
+              'message',
+              contains('CERTIFICATE_VERIFY_FAILED'),
+            ),
+      );
+    },
+  );
+
+  test('a 200 without a message name is not reported as sent', () async {
+    final client = FcmClient(
+      httpClient: MockClient(
+        (_) async => http.Response('<html>Sign in to Wi-Fi</html>', 200),
+      ),
+    );
+    final result = await client.send(
+      projectId: projectId,
+      body: body,
+      auth: FakeTokenProvider(),
+    );
+    expect(
+      result,
+      isA<FcmSendFailure>()
+          .having((r) => r.error.fromGoogle, 'fromGoogle', isFalse)
+          .having((r) => r.httpStatus, 'httpStatus', 200),
     );
   });
 }

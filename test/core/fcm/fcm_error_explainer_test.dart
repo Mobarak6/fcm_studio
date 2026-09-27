@@ -134,4 +134,24 @@ void main() {
     expect(e.title, 'FCM returned an error (HTTP 418)');
     expect(e.explanation, 'teapot');
   });
+
+  test('an HTML 403 from a proxy is not blamed on IAM roles', () {
+    final e = explain(
+      FcmError.fromResponse(403, '<html>Blocked by corporate firewall</html>'),
+    );
+    expect(e.title, 'Unexpected response (HTTP 403)');
+    expect(e.explanation, contains('did not come from FCM'));
+    expect(e.explanation, contains('Blocked by corporate firewall'));
+  });
+
+  test('unexpected transport failures are explained', () {
+    final e = explain(
+      const FcmError(
+        transport: FcmTransportError.unexpected,
+        message: 'Keychain access denied',
+      ),
+    );
+    expect(e.title, 'Something went wrong');
+    expect(e.explanation, 'Keychain access denied');
+  });
 }

@@ -48,16 +48,26 @@ class FcmClient {
         );
       }
       stopwatch.stop();
-      if (response.statusCode == 200) {
+      final messageName = response.statusCode == 200
+          ? _messageName(response.body)
+          : '';
+      if (messageName.isNotEmpty) {
         return FcmSendSuccess(
-          messageName: _messageName(response.body),
+          messageName: messageName,
           duration: stopwatch.elapsed,
           httpStatus: 200,
           responseBody: response.body,
         );
       }
       return FcmSendFailure(
-        error: FcmError.fromResponse(response.statusCode, response.body),
+        // A 200 without a message name did not come from FCM (e.g. a captive portal).
+        error: response.statusCode == 200
+            ? FcmError(
+                httpStatus: 200,
+                message: redact(FcmError.truncate(response.body.trim())),
+                fromGoogle: false,
+              )
+            : FcmError.fromResponse(response.statusCode, response.body),
         duration: stopwatch.elapsed,
         httpStatus: response.statusCode,
         responseBody: response.body,
@@ -80,6 +90,16 @@ class FcmClient {
         error: FcmError(
           transport: FcmTransportError.network,
           message: redact(e.message),
+        ),
+        duration: stopwatch.elapsed,
+      );
+    } on Exception catch (e) {
+      // Anything else from the network stack, e.g. a TLS HandshakeException
+      // when a proxy intercepts HTTPS.
+      return FcmSendFailure(
+        error: FcmError(
+          transport: FcmTransportError.network,
+          message: redact('$e'),
         ),
         duration: stopwatch.elapsed,
       );

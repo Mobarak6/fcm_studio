@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:fcm_studio/core/auth/access_token_provider.dart';
@@ -160,5 +161,21 @@ void main() {
     });
     await expectLater(p.getToken(), throwsA(isA<AuthException>()));
     expect((await p.getToken()).value, 'ya29.test-token');
+  });
+
+  test('turns TLS failures into AuthException', () async {
+    final p = provider(
+      (_) async => throw HandshakeException('CERTIFICATE_VERIFY_FAILED'),
+    );
+    await expectLater(
+      p.getToken(),
+      throwsA(
+        isA<AuthException>().having(
+          (e) => e.message,
+          'message',
+          contains('Network error'),
+        ),
+      ),
+    );
   });
 }

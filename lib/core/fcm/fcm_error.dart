@@ -4,7 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:fcm_studio/core/utils/redact.dart';
 
 /// Why a send failed before FCM returned an HTTP answer.
-enum FcmTransportError { none, network, timeout, auth }
+enum FcmTransportError { none, network, timeout, auth, unexpected }
 
 class FieldViolation extends Equatable {
   const FieldViolation(this.field, this.description);
@@ -25,6 +25,7 @@ class FcmError extends Equatable {
     this.reason,
     this.fieldViolations = const [],
     this.transport = FcmTransportError.none,
+    this.fromGoogle = true,
   });
 
   /// Parses a Google API error body. Never throws, even for non-JSON bodies.
@@ -40,7 +41,8 @@ class FcmError extends Equatable {
       final text = body.trim();
       return FcmError(
         httpStatus: httpStatus,
-        message: text.isEmpty ? null : redact(_truncate(text)),
+        message: text.isEmpty ? null : redact(truncate(text)),
+        fromGoogle: false,
       );
     }
 
@@ -99,9 +101,14 @@ class FcmError extends Equatable {
   final List<FieldViolation> fieldViolations;
   final FcmTransportError transport;
 
+  /// False when the body was not a Google API error, e.g. an HTML page from a
+  /// proxy, firewall or captive portal.
+  final bool fromGoogle;
+
   static String? _string(Object? value) => value is String ? value : null;
 
-  static String _truncate(String text) =>
+  /// Shortens [text] to 500 characters for display.
+  static String truncate(String text) =>
       text.length <= 500 ? text : '${text.substring(0, 500)}…';
 
   @override
@@ -113,5 +120,6 @@ class FcmError extends Equatable {
     reason,
     fieldViolations,
     transport,
+    fromGoogle,
   ];
 }

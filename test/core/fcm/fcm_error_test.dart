@@ -39,4 +39,13 @@ void main() {
   test('truncates very long non-JSON bodies', () {
     expect(FcmError.fromResponse(502, 'x' * 2000).message, hasLength(501));
   });
+
+  test('records whether the body was in Google\'s error format', () {
+    expect(FcmError.fromResponse(404, unregisteredBody).fromGoogle, isTrue);
+    expect(
+      FcmError.fromResponse(403, '<html>Forbidden</html>').fromGoogle,
+      isFalse,
+    );
+    expect(FcmError.fromResponse(500, '').fromGoogle, isFalse);
+  });
 }

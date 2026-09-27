@@ -12,6 +12,7 @@ http.Client fakeGoogle({
   int firebaseStatus = 200,
   int fcmStatus = 200,
   String fcmBody = successBody,
+  void Function(http.Request request)? onFcmRequest,
 }) {
   return MockClient((request) async {
     switch (request.url.host) {
@@ -47,6 +48,7 @@ http.Client fakeGoogle({
                 firebaseStatus,
               );
       case 'fcm.googleapis.com':
+        onFcmRequest?.call(request);
         return http.Response(fcmBody, fcmStatus);
       default:
         return http.Response('unexpected host ${request.url.host}', 500);

@@ -5,6 +5,7 @@ import 'package:fcm_studio/core/fcm/fcm_client.dart';
 import 'package:fcm_studio/core/fcm/fcm_error.dart';
 import 'package:fcm_studio/core/fcm/fcm_error_explainer.dart';
 import 'package:fcm_studio/core/fcm/fcm_send_result.dart';
+import 'package:fcm_studio/core/utils/redact.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_state.dart';
 import 'package:fcm_studio/features/composer/domain/message_renderer.dart';
 import 'package:fcm_studio/features/composer/domain/target.dart';
@@ -93,6 +94,16 @@ class ComposerCubit extends Cubit<ComposerState> {
     } on AuthException catch (e) {
       result = FcmSendFailure(
         error: FcmError(transport: FcmTransportError.auth, message: e.message),
+        duration: Duration.zero,
+      );
+    } catch (e) {
+      // Anything else (e.g. a denied Keychain prompt) must still end the send,
+      // otherwise Send stays disabled until the app restarts.
+      result = FcmSendFailure(
+        error: FcmError(
+          transport: FcmTransportError.unexpected,
+          message: redact('$e'),
+        ),
         duration: Duration.zero,
       );
     }
