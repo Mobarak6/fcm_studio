@@ -27,6 +27,7 @@ void main() {
       {'key': 'has space'},
       {'key': 'size', 'type': 'enum'},
       {'key': 'badge', 'type': 'number', 'defaultValue': 'lots'},
+      {'key': 'n', 'type': 'number', 'defaultValue': 'NaN'},
       {'key': 'on', 'type': 'boolean', 'defaultValue': 'yes'},
       {'key': 'x', 'type': 'colour'},
       {'label': 'no key'},

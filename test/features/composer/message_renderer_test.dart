@@ -331,5 +331,26 @@ void main() {
         contains('Removed because {{badge}} is empty.'),
       );
     });
+
+    test('NaN, Infinity and hex are not numbers and do not crash', () {
+      for (final text in ['NaN', 'Infinity', '0x1F']) {
+        final result = renderWith(
+          {
+            'notification': notification,
+            'apns': {
+              'payload': {
+                'aps': {'badge': '{{badge}}'},
+              },
+            },
+          },
+          {'badge': text},
+        );
+        expect(result.canSend, isFalse, reason: text);
+        expect(
+          result.errors.single.message,
+          '"Badge" must be a number, not "$text".',
+        );
+      }
+    });
   });
 }

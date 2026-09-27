@@ -170,7 +170,7 @@ class PlaceholderSubstitution {
       );
       return original;
     }
-    final number = num.tryParse(text);
+    final number = VariableDef.parseNumber(text);
     if (number == null) {
       _error(key, path, '"${definition.label}" must be a number, not "$text".');
       return original;

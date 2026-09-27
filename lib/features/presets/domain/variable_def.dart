@@ -58,6 +58,20 @@ class VariableDef extends Equatable {
     return variable;
   }
 
+  static final RegExp _decimal = RegExp(
+    r'^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$',
+  );
+
+  /// Parses a finite decimal number (`-3`, `1.5`, `2e3`). Returns null for
+  /// anything else, including NaN, Infinity and hex, which JSON can't carry.
+  static num? parseNumber(String text) {
+    if (!_decimal.hasMatch(text)) {
+      return null;
+    }
+    final number = num.tryParse(text);
+    return number != null && number.isFinite ? number : null;
+  }
+
   static final RegExp keyPattern = RegExp(r'^[a-zA-Z_][a-zA-Z0-9_]*$');
 
   final String key;
@@ -80,7 +94,7 @@ class VariableDef extends Equatable {
     }
     if (type == VariableType.number &&
         defaultValue.isNotEmpty &&
-        num.tryParse(defaultValue) == null) {
+        parseNumber(defaultValue) == null) {
       return 'The default value of "$key" must be a number.';
     }
     if (type == VariableType.boolean &&
