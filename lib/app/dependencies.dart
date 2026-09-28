@@ -3,8 +3,11 @@ import 'package:fcm_studio/core/firebase/firebase_projects_api.dart';
 import 'package:fcm_studio/core/storage/app_database.dart';
 import 'package:fcm_studio/core/storage/secret_store.dart';
 import 'package:fcm_studio/core/utils/clock.dart';
+import 'package:fcm_studio/features/composer/data/message_sender.dart';
+import 'package:fcm_studio/features/history/data/history_repository.dart';
 import 'package:fcm_studio/features/projects/data/project_auth_registry.dart';
 import 'package:fcm_studio/features/projects/data/projects_repository.dart';
+import 'package:fcm_studio/features/targets/data/targets_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -16,28 +19,46 @@ class AppDependencies {
     required SecretStore secrets,
     Clock clock = const SystemClock(),
   }) {
-    final repository = ProjectsRepository(database: database, secrets: secrets);
+    final projectsRepository = ProjectsRepository(
+      database: database,
+      secrets: secrets,
+    );
+    final authRegistry = ProjectAuthRegistry(
+      repository: projectsRepository,
+      httpClient: httpClient,
+      clock: clock,
+    );
+    final historyRepository = HistoryRepository(database: database);
+    final targetsRepository = TargetsRepository(database: database);
     return AppDependencies._(
       httpClient: httpClient,
       database: database,
-      projectsRepository: repository,
-      authRegistry: ProjectAuthRegistry(
-        repository: repository,
-        httpClient: httpClient,
+      clock: clock,
+      projectsRepository: projectsRepository,
+      authRegistry: authRegistry,
+      firebaseProjectsApi: FirebaseProjectsApi(httpClient: httpClient),
+      historyRepository: historyRepository,
+      targetsRepository: targetsRepository,
+      messageSender: MessageSender(
+        fcmClient: FcmClient(httpClient: httpClient),
+        auth: authRegistry,
+        history: historyRepository,
+        targets: targetsRepository,
         clock: clock,
       ),
-      firebaseProjectsApi: FirebaseProjectsApi(httpClient: httpClient),
-      fcmClient: FcmClient(httpClient: httpClient),
     );
   }
 
   AppDependencies._({
     required this.httpClient,
     required this.database,
+    required this.clock,
     required this.projectsRepository,
     required this.authRegistry,
     required this.firebaseProjectsApi,
-    required this.fcmClient,
+    required this.historyRepository,
+    required this.targetsRepository,
+    required this.messageSender,
   });
 
   static Future<AppDependencies> create() async => AppDependencies(
@@ -52,8 +73,11 @@ class AppDependencies {
 
   final http.Client httpClient;
   final AppDatabase database;
+  final Clock clock;
   final ProjectsRepository projectsRepository;
   final ProjectAuthRegistry authRegistry;
   final FirebaseProjectsApi firebaseProjectsApi;
-  final FcmClient fcmClient;
+  final HistoryRepository historyRepository;
+  final TargetsRepository targetsRepository;
+  final MessageSender messageSender;
 }

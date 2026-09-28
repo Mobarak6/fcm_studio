@@ -1,15 +1,13 @@
 import 'dart:convert';
 
-import 'package:fcm_studio/core/auth/access_token_provider.dart';
-import 'package:fcm_studio/core/fcm/fcm_client.dart';
-import 'package:fcm_studio/core/fcm/fcm_error.dart';
-import 'package:fcm_studio/core/fcm/fcm_error_explainer.dart';
-import 'package:fcm_studio/core/fcm/fcm_send_result.dart';
-import 'package:fcm_studio/core/utils/redact.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_state.dart';
+import 'package:fcm_studio/features/composer/data/message_sender.dart';
+import 'package:fcm_studio/features/composer/domain/json_locator.dart';
 import 'package:fcm_studio/features/composer/domain/message_renderer.dart';
 import 'package:fcm_studio/features/composer/domain/target.dart';
-import 'package:fcm_studio/features/projects/domain/access_token_resolver.dart';
+import 'package:fcm_studio/features/composer/domain/template_edits.dart';
+import 'package:fcm_studio/features/presets/domain/preset.dart';
+import 'package:fcm_studio/features/presets/domain/variable_def.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -17,12 +15,9 @@ export 'package:fcm_studio/features/composer/cubit/composer_state.dart';
 
 class ComposerCubit extends Cubit<ComposerState> {
   ComposerCubit({
-    required FcmClient fcmClient,
-    required this._auth,
+    required this._sender,
     this._renderer = const MessageRenderer(),
-    this._explainer = const FcmErrorExplainer(),
-  }) : _fcm = fcmClient,
-       super(_rendered(_parsed(defaultTemplate), _renderer));
+  }) : super(_renderedWith(_parsed(defaultTemplate), _renderer));
 
   static const defaultTemplate = '''
 {
@@ -36,10 +31,12 @@ class ComposerCubit extends Cubit<ComposerState> {
 }
 ''';
 
-  final FcmClient _fcm;
-  final AccessTokenResolver _auth;
+  /// Form edits and loaded presets rewrite the JSON with this indentation.
+  static const _encoder = JsonEncoder.withIndent('  ');
+
+  final MessageSender _sender;
   final MessageRenderer _renderer;
-  final FcmErrorExplainer _explainer;
+  int _focusSerial = 0;
 
   void updateTemplateText(String text) {
     if (text == state.templateText) {
@@ -53,7 +50,6 @@ class ComposerCubit extends Cubit<ComposerState> {
           template: template,
           jsonError: error,
         ),
-        _renderer,
       ),
     );
   }
@@ -62,11 +58,145 @@ class ComposerCubit extends Cubit<ComposerState> {
     if (kind == state.targetKind) {
       return;
     }
-    emit(_rendered(state.copyWith(targetKind: kind), _renderer));
+    emit(_rendered(state.copyWith(targetKind: kind)));
   }
 
   void setTargetValue(String value) {
-    emit(_rendered(state.copyWith(targetValue: value), _renderer));
+    emit(_rendered(state.copyWith(targetValue: value)));
+  }
+
+  /// Sets both parts of the target, e.g. from a saved target or history.
+  void setTarget(TargetKind kind, String value) {
+    emit(_rendered(state.copyWith(targetKind: kind, targetValue: value)));
+  }
+
+  void setValidateOnly(bool value) {
+    if (value == state.validateOnly) {
+      return;
+    }
+    emit(_rendered(state.copyWith(validateOnly: value)));
+  }
+
+  void setVariableValue(String key, String value) {
+    emit(_rendered(state.copyWith(values: {...state.values, key: value})));
+  }
+
+  /// Replaces the variable definitions, keeping the values of keys that
+  /// still exist and using the default for new ones.
+  void setVariables(List<VariableDef> variables) {
+    final values = {
+      for (final v in variables) v.key: state.values[v.key] ?? v.defaultValue,
+    };
+    emit(_rendered(state.copyWith(variables: variables, values: values)));
+  }
+
+  /// Quick fix: defines every undefined placeholder as a text variable.
+  void addMissingVariables() {
+    final missing = state.render.undefinedPlaceholders;
+    if (missing.isEmpty) {
+      return;
+    }
+    setVariables([
+      ...state.variables,
+      for (final key in missing) VariableDef(key: key),
+    ]);
+  }
+
+  /// Form tab: sets one field. Ignored while the JSON is invalid, because the
+  /// form is read-only then.
+  void setField(List<String> path, Object? value) =>
+      _editTemplate((template) => TemplateEdits.write(template, path, value));
+
+  void setDataOnly(bool dataOnly) => _editTemplate(
+    (template) => dataOnly
+        ? TemplateEdits.toDataOnly(template)
+        : TemplateEdits.toNotification(template),
+  );
+
+  void setDataEntries(List<MapEntry<String, Object?>> entries) =>
+      _editTemplate((template) => TemplateEdits.withData(template, entries));
+
+  void _editTemplate(
+    Map<String, Object?> Function(Map<String, Object?> template) edit,
+  ) {
+    final template = state.template;
+    if (template == null) {
+      return;
+    }
+    final updated = edit(template);
+    emit(
+      _rendered(
+        state.copyWith(
+          templateText: _encoder.convert(updated),
+          template: updated,
+          jsonError: null,
+        ),
+      ),
+    );
+  }
+
+  /// Loads [preset]: its template, its variables and their default values.
+  void loadPreset(Preset preset) {
+    emit(
+      _rendered(
+        state.copyWith(
+          templateText: _encoder.convert(preset.template),
+          template: TemplateEdits.copy(preset.template),
+          jsonError: null,
+          variables: preset.variables,
+          values: {for (final v in preset.variables) v.key: v.defaultValue},
+          preset: preset,
+        ),
+      ),
+    );
+  }
+
+  /// Records that the current template was saved as [preset] (clears the dot).
+  void presetSaved(Preset preset) => emit(state.copyWith(preset: preset));
+
+  /// Forgets the loaded preset if it is [presetId], e.g. after it was deleted.
+  void detachPreset(String presetId) {
+    if (state.preset?.id == presetId) {
+      emit(state.copyWith(preset: null));
+    }
+  }
+
+  /// History → Open in composer: the stored message becomes the template,
+  /// with no variables (spec §7.2).
+  void openMessage({
+    required Map<String, Object?> template,
+    required Target target,
+  }) {
+    emit(
+      _rendered(
+        state.copyWith(
+          templateText: _encoder.convert(template),
+          template: TemplateEdits.copy(template),
+          jsonError: null,
+          variables: const [],
+          values: const {},
+          preset: null,
+          targetKind: target.kind,
+          targetValue: target.normalized,
+        ),
+      ),
+    );
+  }
+
+  /// "Show in JSON" for an FCM field violation such as `message.data[0].value`.
+  void showField(String fieldPath) {
+    final template = state.template;
+    if (template == null) {
+      return;
+    }
+    final line = JsonLocator.lineOf(
+      state.templateText,
+      JsonLocator.resolve(fieldPath, template),
+    );
+    if (line == null) {
+      return;
+    }
+    emit(state.copyWith(jsonFocus: JsonFocusRequest(line, ++_focusSerial)));
   }
 
   /// Sends the rendered request. Does nothing while a send is in progress.
@@ -74,54 +204,51 @@ class ComposerCubit extends Cubit<ComposerState> {
     if (!state.canSend) {
       return;
     }
-    final request = state.render.request!;
+    // Render again so {{now_*}} and {{uuid}} get fresh values for this send.
+    final fresh = _rendered(state);
+    final request = fresh.render.request;
+    if (request == null) {
+      emit(fresh);
+      return;
+    }
     emit(
-      state.copyWith(
+      fresh.copyWith(
         sendStatus: SendStatus.sending,
         lastResult: null,
         lastExplanation: null,
+        lastHistoryError: null,
+        lastSentDryRun: fresh.validateOnly,
       ),
     );
-
-    FcmSendResult result;
-    try {
-      final auth = await _auth.providerFor(project);
-      result = await _fcm.send(
-        projectId: project.id,
-        body: request,
-        auth: auth,
-      );
-    } on AuthException catch (e) {
-      result = FcmSendFailure(
-        error: FcmError(transport: FcmTransportError.auth, message: e.message),
-        duration: Duration.zero,
-      );
-    } catch (e) {
-      // Anything else (e.g. a denied Keychain prompt) must still end the send,
-      // otherwise Send stays disabled until the app restarts.
-      result = FcmSendFailure(
-        error: FcmError(
-          transport: FcmTransportError.unexpected,
-          message: redact('$e'),
-        ),
-        duration: Duration.zero,
-      );
-    }
+    final outcome = await _sender.send(
+      project: project,
+      request: request,
+      target: fresh.target,
+      presetName: fresh.preset?.name,
+    );
     if (isClosed) {
       return;
     }
     emit(
       state.copyWith(
         sendStatus: SendStatus.done,
-        lastResult: result,
-        lastExplanation: switch (result) {
-          FcmSendFailure(:final error) => _explainer.explain(
-            error,
-            projectId: project.id,
-          ),
-          FcmSendSuccess() => null,
-        },
+        lastResult: outcome.result,
+        lastExplanation: outcome.explanation,
+        lastHistoryError: outcome.historyError,
       ),
+    );
+  }
+
+  /// A curl command for the current request, or null when there is none.
+  Future<String?> curl(Project project, {required bool includeAccessToken}) {
+    final request = state.render.request;
+    if (request == null) {
+      return Future.value();
+    }
+    return _sender.curl(
+      project: project,
+      request: request,
+      includeAccessToken: includeAccessToken,
     );
   }
 
@@ -161,7 +288,10 @@ class ComposerCubit extends Cubit<ComposerState> {
     );
   }
 
-  static ComposerState _rendered(
+  ComposerState _rendered(ComposerState state) =>
+      _renderedWith(state, _renderer);
+
+  static ComposerState _renderedWith(
     ComposerState state,
     MessageRenderer renderer,
   ) {
@@ -172,7 +302,10 @@ class ComposerCubit extends Cubit<ComposerState> {
     return state.copyWith(
       render: renderer.render(
         template: template,
-        target: Target.of(state.targetKind, state.targetValue),
+        target: state.target,
+        variables: state.variables,
+        values: state.values,
+        validateOnly: state.validateOnly,
       ),
     );
   }

@@ -23,10 +23,7 @@ class FcmStudioApp extends StatelessWidget {
           )..load(),
         ),
         BlocProvider(
-          create: (_) => ComposerCubit(
-            fcmClient: dependencies.fcmClient,
-            auth: dependencies.authRegistry,
-          ),
+          create: (_) => ComposerCubit(sender: dependencies.messageSender),
         ),
       ],
       child: MaterialApp(
