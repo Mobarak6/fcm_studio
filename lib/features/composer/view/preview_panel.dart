@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:fcm_studio/core/auth/access_token_provider.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/composer/domain/render_issue.dart';
+import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class PreviewPanel extends StatelessWidget {
   const PreviewPanel({super.key});
 
+  static const curlMenuKey = Key('copy-curl');
   static const _encoder = JsonEncoder.withIndent('  ');
 
   @override
@@ -39,6 +42,31 @@ class PreviewPanel extends StatelessWidget {
                       ? null
                       : () =>
                             Clipboard.setData(ClipboardData(text: requestText)),
+                ),
+                PopupMenuButton<bool>(
+                  key: curlMenuKey,
+                  tooltip: 'Copy as cURL',
+                  enabled: requestText != null,
+                  icon: const Icon(Icons.terminal, size: 18),
+                  onSelected: (withToken) =>
+                      _copyCurl(context, includeAccessToken: withToken),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: true,
+                      child: ListTile(
+                        title: Text('Copy as cURL with access token'),
+                        subtitle: Text(
+                          "Valid for up to 1 hour. Don't paste it into chats.",
+                        ),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: false,
+                      child: ListTile(
+                        title: Text(r'Copy as cURL with $FCM_ACCESS_TOKEN'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -76,6 +104,42 @@ class PreviewPanel extends StatelessWidget {
         );
       },
     );
+  }
+
+  static Future<void> _copyCurl(
+    BuildContext context, {
+    required bool includeAccessToken,
+  }) async {
+    final project = context.read<ProjectsCubit>().state.selected;
+    final composer = context.read<ComposerCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    if (project == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Add a project first.')),
+      );
+      return;
+    }
+    try {
+      final command = await composer.curl(
+        project,
+        includeAccessToken: includeAccessToken,
+      );
+      if (command == null) {
+        return;
+      }
+      await Clipboard.setData(ClipboardData(text: command));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            includeAccessToken
+                ? "Copied. The access token in it is valid for up to 1 hour; don't paste it into chats."
+                : r'Copied. Set $FCM_ACCESS_TOKEN before running it.',
+          ),
+        ),
+      );
+    } on AuthException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   static String _format(RenderIssue issue) => '${issue.path}: ${issue.message}';

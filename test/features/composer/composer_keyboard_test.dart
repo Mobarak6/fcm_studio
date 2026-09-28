@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:fcm_studio/features/composer/view/send_panel.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
+import 'package:fcm_studio/features/projects/domain/project.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +10,7 @@ import 'package:re_editor/re_editor.dart';
 
 import '../../helpers/app_harness.dart';
 import '../../helpers/keyboard.dart';
+import '../../helpers/service_account_fixture.dart';
 
 // re_editor picks its key handling from the platform once per test file, so these
 // desktop keyboard tests live in their own file and all run as Windows.
@@ -120,4 +122,27 @@ void main() {
     },
     variant: _windows,
   );
+
+  testWidgets('Ctrl+Enter on a prod project asks before sending', (
+    tester,
+  ) async {
+    final requests = <http.Request>[];
+    final (projects, composer) = await pumpAppWithProject(
+      tester,
+      onFcmRequest: requests.add,
+    );
+    await tester.runAsync(
+      () => projects.setEnvironment(testProjectId, ProjectEnvironment.prod),
+    );
+    composer.setTargetValue(token);
+    await tester.pump();
+
+    await pressWithEnter(tester, LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    expect(find.text('Send to production?'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(requests, isEmpty);
+  }, variant: _windows);
 }
