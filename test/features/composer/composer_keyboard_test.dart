@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:fcm_studio/features/composer/view/send_panel.dart';
+import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -84,4 +85,39 @@ void main() {
 
     expect(requests, hasLength(1));
   }, variant: _windows);
+
+  testWidgets(
+    'Ctrl+S updates the loaded user preset, even from inside the JSON editor',
+    (tester) async {
+      final (_, composer) = await pumpAppWithProject(tester);
+      final presets = readCubit<PresetsCubit>(tester);
+      final mine = (await tester.runAsync(
+        () => presets.saveAs(
+          name: 'Mine',
+          template: const {
+            'notification': {'title': 'A'},
+          },
+          variables: const [],
+        ),
+      ))!;
+      composer
+        ..loadPreset(mine)
+        ..setField(['notification', 'title'], 'B');
+      await tester.pump();
+      await showJsonTab(tester);
+      await tester.tap(find.byType(CodeEditor));
+      await tester.pump();
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await settleAsync(tester);
+
+      expect(presets.state.userPresets.single.template, {
+        'notification': {'title': 'B'},
+      });
+      expect(composer.state.isDirty, isFalse);
+    },
+    variant: _windows,
+  );
 }

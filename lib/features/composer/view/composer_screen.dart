@@ -2,6 +2,8 @@ import 'package:fcm_studio/features/composer/view/message_editor_tabs.dart';
 import 'package:fcm_studio/features/composer/view/preview_panel.dart';
 import 'package:fcm_studio/features/composer/view/send_panel.dart';
 import 'package:fcm_studio/features/composer/view/target_picker.dart';
+import 'package:fcm_studio/features/presets/view/preset_actions.dart';
+import 'package:fcm_studio/features/presets/view/preset_picker.dart';
 import 'package:fcm_studio/features/projects/view/project_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,6 +29,10 @@ class ComposerScreen extends StatelessWidget {
           includeRepeats: false,
         ): () =>
             sendSelected(context),
+        const SingleActivator(LogicalKeyboardKey.keyS, meta: true): () =>
+            savePreset(context),
+        const SingleActivator(LogicalKeyboardKey.keyS, control: true): () =>
+            savePreset(context),
       },
       child: Focus(
         autofocus: true,
@@ -84,7 +90,13 @@ class _SetupPane extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: const [ProjectSwitcher(), SizedBox(height: 24), TargetPicker()],
+      children: const [
+        ProjectSwitcher(),
+        SizedBox(height: 24),
+        TargetPicker(),
+        SizedBox(height: 24),
+        PresetPicker(),
+      ],
     );
   }
 }

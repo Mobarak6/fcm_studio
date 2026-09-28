@@ -65,9 +65,12 @@ class _JsonTemplateEditorState extends State<JsonTemplateEditor> {
         BlocListener<ComposerCubit, ComposerState>(
           listenWhen: (previous, current) =>
               previous.templateText != current.templateText,
-          listener: (context, state) {
-            if (state.templateText != _controller.text) {
-              _controller.text = state.templateText;
+          listener: (context, _) {
+            // Events arrive a microtask late; follow the cubit's latest text,
+            // or two quick edits make the editor and cubit overwrite each other.
+            final text = context.read<ComposerCubit>().state.templateText;
+            if (text != _controller.text) {
+              _controller.text = text;
             }
           },
         ),
@@ -128,7 +131,8 @@ class _JsonTemplateEditorState extends State<JsonTemplateEditor> {
 }
 
 /// re_editor's default shortcuts, minus the keys the composer screen uses:
-/// Cmd/Ctrl+Enter ("new line" in re_editor) sends.
+/// Cmd/Ctrl+Enter ("new line" in re_editor) sends, and Cmd/Ctrl+S saves the
+/// preset.
 class _ComposerKeyFreeShortcuts extends DefaultCodeShortcutsActivatorsBuilder {
   const _ComposerKeyFreeShortcuts();
 
@@ -140,6 +144,10 @@ class _ComposerKeyFreeShortcuts extends DefaultCodeShortcutsActivatorsBuilder {
 
   @override
   List<ShortcutActivator>? build(CodeShortcutType type) {
+    // Cmd/Ctrl+S saves the preset (composer screen shortcut).
+    if (type == CodeShortcutType.save) {
+      return null;
+    }
     final activators = super.build(type);
     if (type != CodeShortcutType.newLine || activators == null) {
       return activators;

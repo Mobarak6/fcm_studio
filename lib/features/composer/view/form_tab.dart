@@ -2,6 +2,7 @@ import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/composer/domain/template_edits.dart';
 import 'package:fcm_studio/features/composer/view/data_entries_editor.dart';
 import 'package:fcm_studio/features/composer/view/form_fields.dart';
+import 'package:fcm_studio/features/composer/view/variables_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -66,6 +67,7 @@ class FormTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const VariablesSection(),
             FormSection(
               title: 'Message type',
               children: [
