@@ -10,7 +10,8 @@ import 'package:re_highlight/styles/atom-one-light.dart';
 /// The JSON editor for the message template.
 ///
 /// Every edit reaches the cubit immediately, so Send (or Cmd/Ctrl+Enter) right
-/// after typing always sends what is on screen.
+/// after typing always sends what is on screen. Edits made elsewhere (the
+/// Form tab, a loaded preset) replace the editor's text.
 class JsonTemplateEditor extends StatefulWidget {
   const JsonTemplateEditor({super.key});
 
@@ -20,6 +21,7 @@ class JsonTemplateEditor extends StatefulWidget {
 
 class _JsonTemplateEditorState extends State<JsonTemplateEditor> {
   late final CodeLineEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -34,11 +36,23 @@ class _JsonTemplateEditorState extends State<JsonTemplateEditor> {
     context.read<ComposerCubit>().updateTemplateText(_controller.text);
   }
 
+  /// Selects [line] (1-based) once the tab switch has put the editor on screen.
+  void _showLine(int line) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _focusNode.requestFocus();
+      _controller.selectLine(line - 1);
+    });
+  }
+
   @override
   void dispose() {
     _controller
       ..removeListener(_onChanged)
       ..dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -46,55 +60,77 @@ class _JsonTemplateEditorState extends State<JsonTemplateEditor> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Text(
-            'Message JSON (the FCM "message" object, without the target)',
-            style: theme.textTheme.titleSmall,
-          ),
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<ComposerCubit, ComposerState>(
+          listenWhen: (previous, current) =>
+              previous.templateText != current.templateText,
+          listener: (context, state) {
+            if (state.templateText != _controller.text) {
+              _controller.text = state.templateText;
+            }
+          },
         ),
-        Expanded(
-          child: CodeEditor(
-            controller: _controller,
-            shortcutsActivatorsBuilder: const _SendKeyFreeShortcuts(),
-            style: CodeEditorStyle(
-              fontSize: 13,
-              codeTheme: CodeHighlightTheme(
-                languages: {'json': CodeHighlightThemeMode(mode: langJson)},
-                theme: dark ? atomOneDarkTheme : atomOneLightTheme,
+        BlocListener<ComposerCubit, ComposerState>(
+          listenWhen: (previous, current) =>
+              current.jsonFocus != null &&
+              previous.jsonFocus != current.jsonFocus,
+          listener: (context, state) => _showLine(state.jsonFocus!.line),
+        ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text(
+              'Message JSON (the FCM "message" object, without the target)',
+              style: theme.textTheme.titleSmall,
+            ),
+          ),
+          Expanded(
+            child: CodeEditor(
+              controller: _controller,
+              focusNode: _focusNode,
+              shortcutsActivatorsBuilder: const _ComposerKeyFreeShortcuts(),
+              style: CodeEditorStyle(
+                fontSize: 13,
+                codeTheme: CodeHighlightTheme(
+                  languages: {'json': CodeHighlightThemeMode(mode: langJson)},
+                  theme: dark ? atomOneDarkTheme : atomOneLightTheme,
+                ),
               ),
             ),
           ),
-        ),
-        BlocSelector<ComposerCubit, ComposerState, String?>(
-          selector: (state) => state.jsonError,
-          builder: (context, error) => error == null
-              ? const SizedBox.shrink()
-              : Container(
-                  width: double.infinity,
-                  color: theme.colorScheme.errorContainer,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+          BlocSelector<ComposerCubit, ComposerState, String?>(
+            selector: (state) => state.jsonError,
+            builder: (context, error) => error == null
+                ? const SizedBox.shrink()
+                : Container(
+                    width: double.infinity,
+                    color: theme.colorScheme.errorContainer,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      error,
+                      style: TextStyle(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
                   ),
-                  child: Text(
-                    error,
-                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
-                  ),
-                ),
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// re_editor's default shortcuts, minus Cmd/Ctrl+Enter as "new line", so that
-/// combination reaches the screen's Send shortcut.
-class _SendKeyFreeShortcuts extends DefaultCodeShortcutsActivatorsBuilder {
-  const _SendKeyFreeShortcuts();
+/// re_editor's default shortcuts, minus the keys the composer screen uses:
+/// Cmd/Ctrl+Enter ("new line" in re_editor) sends.
+class _ComposerKeyFreeShortcuts extends DefaultCodeShortcutsActivatorsBuilder {
+  const _ComposerKeyFreeShortcuts();
 
   static bool _isSendKey(ShortcutActivator activator) =>
       activator is SingleActivator &&

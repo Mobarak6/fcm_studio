@@ -1,4 +1,4 @@
-import 'package:fcm_studio/features/composer/view/json_template_editor.dart';
+import 'package:fcm_studio/features/composer/view/message_editor_tabs.dart';
 import 'package:fcm_studio/features/composer/view/preview_panel.dart';
 import 'package:fcm_studio/features/composer/view/send_panel.dart';
 import 'package:fcm_studio/features/composer/view/target_picker.dart';
@@ -40,7 +40,7 @@ class ComposerScreen extends StatelessWidget {
                   children: [
                     SizedBox(width: 320, child: _SetupPane()),
                     VerticalDivider(width: 1),
-                    Expanded(child: JsonTemplateEditor()),
+                    Expanded(child: MessageEditorTabs()),
                     VerticalDivider(width: 1),
                     SizedBox(width: 420, child: _OutputPane()),
                   ],
@@ -53,7 +53,7 @@ class ComposerScreen extends StatelessWidget {
                     TabBar(
                       tabs: [
                         Tab(text: 'Setup'),
-                        Tab(text: 'JSON'),
+                        Tab(text: 'Message'),
                         Tab(text: 'Preview & result'),
                       ],
                     ),
@@ -61,7 +61,7 @@ class ComposerScreen extends StatelessWidget {
                       child: TabBarView(
                         children: [
                           _SetupPane(),
-                          JsonTemplateEditor(),
+                          MessageEditorTabs(),
                           _OutputPane(),
                         ],
                       ),

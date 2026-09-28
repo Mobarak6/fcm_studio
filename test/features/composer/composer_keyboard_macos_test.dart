@@ -23,6 +23,7 @@ void main() {
       await tester.pump();
       final textBefore = editorController(tester).text;
 
+      await showJsonTab(tester);
       await tester.tap(find.byType(CodeEditor));
       await tester.pump();
       await pressWithEnter(tester, LogicalKeyboardKey.metaLeft);

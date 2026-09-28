@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/app_harness.dart';
 import '../../helpers/fcm_fixtures.dart';
+import '../../helpers/keyboard.dart';
 
 void main() {
   const token = 'abc:APA91bxyz';
@@ -17,6 +18,7 @@ void main() {
       ..setTargetValue(token)
       ..updateTemplateText('{"notification": ');
     await tester.pump();
+    await showJsonTab(tester);
 
     expect(find.textContaining('Invalid JSON'), findsOneWidget);
     expect(sendButton(tester).onPressed, isNull);
