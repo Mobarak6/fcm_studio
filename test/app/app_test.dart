@@ -1,3 +1,6 @@
+import 'package:fcm_studio/app/app_error_banner.dart';
+import 'package:fcm_studio/app/app_error_cubit.dart';
+import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,5 +42,28 @@ void main() {
     );
     await tester.pump();
     expect(find.text('PROD'), findsOneWidget);
+  });
+
+  testWidgets('the error banner shows a reported error until dismissed', (
+    tester,
+  ) async {
+    await pumpApp(tester, await buildTestDependencies(tester));
+    readCubit<AppErrorCubit>(
+      tester,
+    ).report(StateError('disk full'), context: 'Could not save the preset');
+    await tester.pump();
+    expect(
+      find.text('Could not save the preset: Bad state: disk full'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(AppErrorBanner.dismissKey));
+    await tester.pump();
+    expect(find.textContaining('disk full'), findsNothing);
+  });
+
+  testWidgets('the built-in presets are loaded at startup', (tester) async {
+    await pumpApp(tester, await buildTestDependencies(tester));
+    expect(readCubit<PresetsCubit>(tester).state.builtIns, hasLength(4));
   });
 }

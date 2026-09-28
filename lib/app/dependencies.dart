@@ -1,14 +1,17 @@
 import 'package:fcm_studio/core/fcm/fcm_client.dart';
 import 'package:fcm_studio/core/firebase/firebase_projects_api.dart';
+import 'package:fcm_studio/core/platform/file_access.dart';
 import 'package:fcm_studio/core/storage/app_database.dart';
 import 'package:fcm_studio/core/storage/secret_store.dart';
 import 'package:fcm_studio/core/utils/clock.dart';
 import 'package:fcm_studio/features/composer/data/message_sender.dart';
 import 'package:fcm_studio/features/history/data/history_repository.dart';
+import 'package:fcm_studio/features/presets/data/presets_repository.dart';
 import 'package:fcm_studio/features/projects/data/project_auth_registry.dart';
 import 'package:fcm_studio/features/projects/data/projects_repository.dart';
 import 'package:fcm_studio/features/targets/data/targets_repository.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 /// Every long-lived service, created once at startup.
@@ -18,6 +21,8 @@ class AppDependencies {
     required AppDatabase database,
     required SecretStore secrets,
     Clock clock = const SystemClock(),
+    FileAccess files = const PlatformFileAccess(),
+    Future<String> Function()? loadBuiltInPresets,
   }) {
     final projectsRepository = ProjectsRepository(
       database: database,
@@ -34,9 +39,16 @@ class AppDependencies {
       httpClient: httpClient,
       database: database,
       clock: clock,
+      files: files,
       projectsRepository: projectsRepository,
       authRegistry: authRegistry,
       firebaseProjectsApi: FirebaseProjectsApi(httpClient: httpClient),
+      presetsRepository: PresetsRepository(
+        database: database,
+        loadBuiltInJson:
+            loadBuiltInPresets ??
+            () => rootBundle.loadString(PresetsRepository.builtInAsset),
+      ),
       historyRepository: historyRepository,
       targetsRepository: targetsRepository,
       messageSender: MessageSender(
@@ -53,9 +65,11 @@ class AppDependencies {
     required this.httpClient,
     required this.database,
     required this.clock,
+    required this.files,
     required this.projectsRepository,
     required this.authRegistry,
     required this.firebaseProjectsApi,
+    required this.presetsRepository,
     required this.historyRepository,
     required this.targetsRepository,
     required this.messageSender,
@@ -74,9 +88,11 @@ class AppDependencies {
   final http.Client httpClient;
   final AppDatabase database;
   final Clock clock;
+  final FileAccess files;
   final ProjectsRepository projectsRepository;
   final ProjectAuthRegistry authRegistry;
   final FirebaseProjectsApi firebaseProjectsApi;
+  final PresetsRepository presetsRepository;
   final HistoryRepository historyRepository;
   final TargetsRepository targetsRepository;
   final MessageSender messageSender;
