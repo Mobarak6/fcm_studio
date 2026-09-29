@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:fcm_studio/app/app_error_cubit.dart';
 import 'package:fcm_studio/core/auth/access_token_provider.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/composer/domain/render_issue.dart';
@@ -112,6 +113,7 @@ class PreviewPanel extends StatelessWidget {
   }) async {
     final project = context.read<ProjectsCubit>().state.selected;
     final composer = context.read<ComposerCubit>();
+    final errors = context.read<AppErrorCubit>();
     final messenger = ScaffoldMessenger.of(context);
     if (project == null) {
       messenger.showSnackBar(
@@ -139,6 +141,8 @@ class PreviewPanel extends StatelessWidget {
       );
     } on AuthException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      errors.report(e, context: 'Could not copy the cURL command');
     }
   }
 

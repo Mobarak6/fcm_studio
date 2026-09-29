@@ -73,6 +73,7 @@ class HistoryScreen extends StatelessWidget {
 
   Future<void> _clear(BuildContext context) async {
     final history = context.read<HistoryCubit>();
+    final errors = context.read<AppErrorCubit>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -94,7 +95,11 @@ class HistoryScreen extends StatelessWidget {
       ),
     );
     if (confirmed ?? false) {
-      await history.clear();
+      try {
+        await history.clear();
+      } catch (e) {
+        errors.report(e, context: 'Could not clear the history');
+      }
     }
   }
 }
@@ -129,7 +134,9 @@ class _FiltersState extends State<_Filters> {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           DropdownButton<String?>(
-            value: filter.projectId,
+            value: widget.state.projectIds.contains(filter.projectId)
+                ? filter.projectId
+                : null,
             items: [
               const DropdownMenuItem<String?>(child: Text('All projects')),
               for (final id in widget.state.projectIds)
@@ -319,11 +326,14 @@ class HistoryTile extends StatelessWidget {
     final outcome = await history.resend(entry, project);
     messenger.showSnackBar(
       SnackBar(
-        content: Text(switch (outcome.result) {
-          FcmSendSuccess(:final messageName) => 'Resent: $messageName',
-          FcmSendFailure() =>
-            'Resend failed: ${outcome.explanation?.title ?? 'see History'}',
-        }),
+        content: Text(
+          switch (outcome.result) {
+                FcmSendSuccess(:final messageName) => 'Resent: $messageName',
+                FcmSendFailure() =>
+                  'Resend failed: ${outcome.explanation?.title ?? 'see History'}',
+              } +
+              (outcome.historyError == null ? '' : '. ${outcome.historyError}'),
+        ),
       ),
     );
   }
@@ -374,6 +384,7 @@ class HistoryTile extends StatelessWidget {
     required bool includeAccessToken,
   }) async {
     final history = context.read<HistoryCubit>();
+    final errors = context.read<AppErrorCubit>();
     final messenger = ScaffoldMessenger.of(context);
     try {
       final command = await history.curl(
@@ -393,6 +404,8 @@ class HistoryTile extends StatelessWidget {
       );
     } on AuthException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      errors.report(e, context: 'Could not copy the cURL command');
     }
   }
 }

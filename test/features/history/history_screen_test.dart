@@ -166,6 +166,28 @@ void main() {
     });
   });
 
+  testWidgets('Clear history with a project filter set leaves a valid filter', (
+    tester,
+  ) async {
+    await openHistory(
+      tester,
+      entries: [
+        historyEntry('a', sentAt: DateTime.utc(2026, 10, 3, 9)),
+        historyEntry('b', sentAt: DateTime.utc(2026, 10, 3, 10)),
+      ],
+    );
+    await tester.tap(find.byType(DropdownButton<String?>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('demo-project').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(HistoryScreen.clearKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('history-clear-confirm')));
+    await settleAsync(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.text('Nothing sent yet.'), findsOneWidget);
+  });
+
   testWidgets('Clear history asks, then empties the list', (tester) async {
     await openHistory(tester, entries: [historyEntry('e1')]);
     await tester.tap(find.byKey(HistoryScreen.clearKey));

@@ -83,10 +83,15 @@ class _TargetTile extends StatelessWidget {
 
   Future<void> _copy(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
-    await Clipboard.setData(ClipboardData(text: target.value));
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Copied the full value.')),
-    );
+    final errors = context.read<AppErrorCubit>();
+    try {
+      await Clipboard.setData(ClipboardData(text: target.value));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Copied the full value.')),
+      );
+    } catch (e) {
+      errors.report(e, context: 'Could not copy the value');
+    }
   }
 
   Future<void> _onAction(BuildContext context, _TargetAction action) async {

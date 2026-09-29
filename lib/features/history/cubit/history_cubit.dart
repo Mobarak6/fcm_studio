@@ -32,6 +32,9 @@ class HistoryCubit extends Cubit<HistoryState> {
 
   Future<void> clear() async {
     await _repository.clear();
+    // The filtered project has no entries left, so the filter would match
+    // no dropdown item.
+    emit(state.copyWith(filter: state.filter.copyWith(projectId: () => null)));
     await load();
   }
 

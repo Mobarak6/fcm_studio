@@ -78,6 +78,14 @@ void main() {
     },
   );
 
+  test('clear resets the project filter', () async {
+    await repository.add(historyEntry('e1'));
+    final cubit = await loaded();
+    cubit.setFilter(const HistoryFilter(projectId: 'demo-project'));
+    await cubit.clear();
+    expect(cubit.state.filter.projectId, isNull);
+  });
+
   test('curl for an entry', () async {
     await repository.add(historyEntry('e1'));
     final cubit = await loaded();
