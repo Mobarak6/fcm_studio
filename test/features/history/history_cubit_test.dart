@@ -73,8 +73,31 @@ void main() {
       );
       await reloaded;
 
-      expect(outcome.result, isA<FcmSendSuccess>());
+      expect(outcome?.result, isA<FcmSendSuccess>());
       expect(jsonDecode(requests.single.body), historyEntry('e1').request);
+    },
+  );
+
+  test(
+    'a second resend of the same entry while one is in flight does nothing',
+    () async {
+      final requests = <http.Request>[];
+      await repository.add(historyEntry('e1'));
+      final cubit = await loaded(
+        client: fakeGoogle(onFcmRequest: requests.add),
+      );
+      final entry = cubit.state.entries.single;
+
+      final first = cubit.resend(entry, testProject);
+      final second = cubit.resend(entry, testProject);
+
+      expect(await second, isNull);
+      expect(await first, isNotNull);
+      expect(requests, hasLength(1));
+
+      // Once the first one is done the entry can be resent again.
+      expect(await cubit.resend(entry, testProject), isNotNull);
+      expect(requests, hasLength(2));
     },
   );
 

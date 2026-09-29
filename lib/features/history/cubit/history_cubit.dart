@@ -20,6 +20,7 @@ class HistoryCubit extends Cubit<HistoryState> {
   final HistoryRepository _repository;
   final MessageSender _sender;
   late final StreamSubscription<void> _subscription;
+  final _resending = <String>{};
 
   Future<void> load() async {
     final entries = await _repository.loadAll();
@@ -39,14 +40,24 @@ class HistoryCubit extends Cubit<HistoryState> {
   }
 
   /// Sends [entry]'s stored request again, with a current access token
-  /// (spec §7.2). The resend gets its own history entry.
-  Future<SendOutcome> resend(HistoryEntry entry, Project project) =>
-      _sender.send(
+  /// (spec §7.2). The resend gets its own history entry. Returns null when
+  /// this entry is already being resent, so a double click sends once
+  /// (spec §8.1).
+  Future<SendOutcome?> resend(HistoryEntry entry, Project project) async {
+    if (!_resending.add(entry.id)) {
+      return null;
+    }
+    try {
+      return await _sender.send(
         project: project,
         request: entry.request,
         target: entry.target.toTarget(),
         presetName: entry.presetName,
       );
+    } finally {
+      _resending.remove(entry.id);
+    }
+  }
 
   Future<String> curl(
     HistoryEntry entry,

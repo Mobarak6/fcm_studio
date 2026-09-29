@@ -324,6 +324,9 @@ class HistoryTile extends StatelessWidget {
       return;
     }
     final outcome = await history.resend(entry, project);
+    if (outcome == null) {
+      return;
+    }
     messenger.showSnackBar(
       SnackBar(
         content: Text(
