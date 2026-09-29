@@ -1,3 +1,4 @@
+import 'package:fcm_studio/app/navigation_cubit.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/composer/view/message_editor_tabs.dart';
 import 'package:fcm_studio/features/composer/view/preview_panel.dart';
@@ -11,13 +12,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ComposerScreen extends StatelessWidget {
+class ComposerScreen extends StatefulWidget {
   const ComposerScreen({super.key});
 
   static const wideLayoutMinWidth = 1000.0;
 
   @override
+  State<ComposerScreen> createState() => _ComposerScreenState();
+}
+
+class _ComposerScreenState extends State<ComposerScreen> {
+  final _focusNode = FocusNode(debugLabel: 'composer');
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // The shortcuts only fire while focus is inside the composer, so take
+    // focus back whenever the user returns to it from another screen.
+    return BlocListener<NavigationCubit, AppSection>(
+      listenWhen: (previous, current) => current == AppSection.composer,
+      // The screen is still hidden when the cubit emits; wait for the frame
+      // that shows it, or the request is ignored.
+      listener: (context, section) =>
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _focusNode.requestFocus();
+            }
+          }),
+      child: _shortcuts(context),
+    );
+  }
+
+  Widget _shortcuts(BuildContext context) {
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(
@@ -38,6 +69,7 @@ class ComposerScreen extends StatelessWidget {
             savePreset(context),
       },
       child: Focus(
+        focusNode: _focusNode,
         autofocus: true,
         child: Scaffold(
           appBar: AppBar(title: const Text('FCM Studio')),
@@ -47,7 +79,8 @@ class ComposerScreen extends StatelessWidget {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    if (constraints.maxWidth >= wideLayoutMinWidth) {
+                    if (constraints.maxWidth >=
+                        ComposerScreen.wideLayoutMinWidth) {
                       return const Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [

@@ -4,6 +4,7 @@ import 'package:fcm_studio/features/composer/view/send_panel.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/presets/view/preset_details_dialog.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -153,6 +154,30 @@ void main() {
       expect(find.byType(PresetDetailsDialog), findsNothing);
       expect(presets.state.userPresets.single, mine);
       expect(presets.state.userPresets.single.updatedAt, mine.updatedAt);
+    },
+    variant: _windows,
+  );
+
+  testWidgets(
+    'Ctrl+Enter sends after opening a preset from the Presets screen',
+    (tester) async {
+      final requests = <http.Request>[];
+      final (_, composer) = await pumpAppWithProject(
+        tester,
+        onFcmRequest: requests.add,
+      );
+      composer.setTargetValue(token);
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('nav-presets')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Simple notification'));
+      await tester.pumpAndSettle();
+
+      await pressWithEnter(tester, LogicalKeyboardKey.controlLeft);
+      await settle(tester);
+
+      expect(requests, hasLength(1));
     },
     variant: _windows,
   );
