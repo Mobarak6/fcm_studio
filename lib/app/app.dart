@@ -1,10 +1,11 @@
 import 'package:fcm_studio/app/app_error_banner.dart';
 import 'package:fcm_studio/app/app_error_cubit.dart';
 import 'package:fcm_studio/app/dependencies.dart';
+import 'package:fcm_studio/app/navigation_cubit.dart';
+import 'package:fcm_studio/app/shell.dart';
 import 'package:fcm_studio/app/theme.dart';
 import 'package:fcm_studio/core/platform/file_access.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
-import 'package:fcm_studio/features/composer/view/composer_screen.dart';
 import 'package:fcm_studio/features/history/cubit/history_cubit.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
@@ -60,6 +61,7 @@ class FcmStudioApp extends StatelessWidget {
               sender: dependencies.messageSender,
             )..load(),
           ),
+          BlocProvider(create: (_) => NavigationCubit()),
           BlocProvider(
             create: (_) => ComposerCubit(sender: dependencies.messageSender),
           ),
@@ -76,7 +78,7 @@ class FcmStudioApp extends StatelessWidget {
               Expanded(child: child ?? const SizedBox.shrink()),
             ],
           ),
-          home: const ComposerScreen(),
+          home: const AppShell(),
         ),
       ),
     );
