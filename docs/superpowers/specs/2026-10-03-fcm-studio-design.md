@@ -149,6 +149,7 @@ When the selected project is `prod`:
 - A red banner appears above the composer.
 - Every send opens a confirmation dialog.
 - For topic or condition sends, the dialog names the audience, e.g. "every device subscribed to `all_zone_store`", and the confirm button is enabled only after the user types the project ID.
+- Dry runs (validate only) skip the confirmation, because they deliver nothing.
 
 ### 4.4 OAuth client configuration
 
@@ -272,10 +273,12 @@ VariableDef { key ([a-zA-Z_][a-zA-Z0-9_]*), label, type: text|multiline|number|b
   { "format": "fcm-studio.presets", "version": 1, "exportedAt": "…", "presets": [ … ] }
   ```
   On desktop the user chooses where to save the file. On web the file is downloaded.
+  Built-in presets are not exported; every install has them.
 - **Import:**
   - checks `format`, and rejects a `version` newer than the app supports;
   - checks each preset;
   - asks what to do when a name already exists: **Keep both** (adds " (2)"), **Replace**, or **Skip**.
+  - One choice applies to every name clash in the file.
   - Built-in presets are never replaced.
 - Exports never include credentials, targets or history.
 
@@ -497,6 +500,15 @@ This step runs only after the user confirms, because it restarts the app.
   - The macOS app launches and creates its database with no errors.
   - `tool/check_sa_token.dart` reaches Google's token endpoint. A throwaway key gets `invalid_grant: account not found`, which means the signed assertion's format is accepted.
 - *Pending, needs the user:*
+  - The real service account key check (`dart run tool/check_sa_token.dart <key.json>`).
+  - The M1 end-to-end send to the Redmi from the macOS app, including Keychain persistence after a relaunch.
+  - The hands-on `re_editor` check in Chrome, and the web reload / "Remember" flow.
+  - The M0 token-file capture (moved to M3).
+
+**M2 status (2026-10-03):**
+- *Done:* 292 automated tests passing and a clean `flutter analyze`; the macOS debug and web builds succeed.
+- *Manual:* Pending, needs the user: Step 3 items 1-9 (the success test with a pasted token on the Redmi, timed) and Step 4 (Chrome).
+- *Still pending from M1:*
   - The real service account key check (`dart run tool/check_sa_token.dart <key.json>`).
   - The M1 end-to-end send to the Redmi from the macOS app, including Keychain persistence after a relaunch.
   - The hands-on `re_editor` check in Chrome, and the web reload / "Remember" flow.
