@@ -182,6 +182,9 @@ The **template is the single source of truth.** The Form tab and the JSON tab bo
 1. **Substitute variables** in every string, recursively.
    - `{{key}}` takes the user's value.
    - Built-in values need no definition: `{{now_iso}}`, `{{now_ms}}`, `{{uuid}}`.
+   - Built-in values get one value per render, so `{{uuid}}` used twice gives the same id twice. The preview shows sample values, and every send renders again, so each send gets fresh values.
+   - Placeholders are replaced in string values only, not in keys.
+   - An optional number or boolean variable that is empty removes its field (for example no `badge`), with a note in the preview.
    - If a string is *exactly* one placeholder and the variable is `number` or `boolean`, the result has that type. This keeps `apns.payload.aps.badge` an integer. Otherwise the value is inserted as text.
 2. **Turn `data` values into strings:**
    - numbers and booleans become text;
@@ -217,6 +220,8 @@ The form is a structured editor for common paths. **Fields it doesn't cover are 
   - sets `android.priority: high`;
   - sets `apns.headers.apns-priority: "5"` and `apns.headers.apns-push-type: "background"`;
   - sets `apns.payload.aps.content-available: 1`.
+  - Switching back to `Notification + data` adds an empty `notification` and removes the three background settings that Data only added.
+- **JSON rewrite:** form edits rewrite the JSON with 2-space indentation.
 - **Notification:** title, body, image URL.
 - **Data:** a key/value table where rows can be added, removed and reordered.
 - **Android:**
@@ -266,7 +271,7 @@ VariableDef { key ([a-zA-Z_][a-zA-Z0-9_]*), label, type: text|multiline|number|b
   - Notification with image;
   - Notification + data;
   - Data only (silent / background).
-- **Saving:** "Save as preset" creates a new one. "Update preset" overwrites the preset it came from. Unsaved changes show a dot on the preset name.
+- **Saving:** "Save as preset" creates a new one. "Update preset" overwrites the preset it came from. Unsaved changes show a dot on the preset name. The dot and the "Discard unsaved changes?" question apply only while a preset is loaded.
 - **Variables editor:** when the template contains placeholders without a definition, a quick fix offers to add them.
 - **Export** of one, several or all presets produces a `*.fcmpresets.json` file:
   ```json
@@ -291,7 +296,7 @@ SavedTarget { id, label, kind: token|topic|condition, value, projectId?, senderI
               source: manual | device(serial, model, package) | history, lastUsedAt }
 ```
 
-- The star next to the target field saves the current target.
+- The star next to the target field saves the current target. A filled star means the target is saved, and tapping it removes the saved target.
 - **Tokens read from a device** are saved automatically and labelled `"<model> · <package> (debug|release)"`.
   - They are keyed by `(serial, package)`, so reading the token again updates the saved value instead of adding a duplicate.
 - The autocomplete puts targets for the current project first, then the rest, sorted by `lastUsedAt`.
@@ -506,8 +511,16 @@ This step runs only after the user confirms, because it restarts the app.
   - The M0 token-file capture (moved to M3).
 
 **M2 status (2026-10-03):**
-- *Done:* 292 automated tests passing and a clean `flutter analyze`; the macOS debug and web builds succeed.
-- *Manual:* Pending, needs the user: Step 3 items 1-9 (the success test with a pasted token on the Redmi, timed) and Step 4 (Chrome).
+- *Done:* the M2 code with its automated tests passing and a clean `flutter analyze`; the macOS debug and web builds succeed.
+- *Manual:* Pending, needs the user:
+  - the timed success test with a pasted token on a real phone;
+  - a dry run;
+  - a data-only send;
+  - persistence after a relaunch;
+  - the production safeguards;
+  - History → Resend and Copy as cURL;
+  - preset export and import;
+  - the web check in Chrome.
 - *Still pending from M1:*
   - The real service account key check (`dart run tool/check_sa_token.dart <key.json>`).
   - The M1 end-to-end send to the Redmi from the macOS app, including Keychain persistence after a relaunch.
