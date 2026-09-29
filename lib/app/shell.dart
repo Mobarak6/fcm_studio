@@ -1,6 +1,8 @@
 import 'package:fcm_studio/app/navigation_cubit.dart';
 import 'package:fcm_studio/features/composer/view/composer_screen.dart';
+import 'package:fcm_studio/features/history/view/history_screen.dart';
 import 'package:fcm_studio/features/presets/view/presets_screen.dart';
+import 'package:fcm_studio/features/targets/view/targets_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -31,13 +33,27 @@ class AppShell extends StatelessWidget {
                 selectedIcon: Icon(Icons.bookmarks),
                 label: Text('Presets', key: Key('nav-presets')),
               ),
+              NavigationRailDestination(
+                icon: Icon(Icons.star_outline),
+                selectedIcon: Icon(Icons.star),
+                label: Text('Targets', key: Key('nav-targets')),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.history),
+                label: Text('History', key: Key('nav-history')),
+              ),
             ],
           ),
           const VerticalDivider(width: 1),
           Expanded(
             child: IndexedStack(
               index: section.index,
-              children: const [ComposerScreen(), PresetsScreen()],
+              children: const [
+                ComposerScreen(),
+                PresetsScreen(),
+                TargetsScreen(),
+                HistoryScreen(),
+              ],
             ),
           ),
         ],
