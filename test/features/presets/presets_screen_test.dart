@@ -5,12 +5,15 @@ import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/presets/domain/preset.dart';
 import 'package:fcm_studio/features/presets/domain/preset_codec.dart';
+import 'package:fcm_studio/features/presets/view/preset_details_dialog.dart';
+import 'package:fcm_studio/features/presets/view/preset_picker.dart';
 import 'package:fcm_studio/features/presets/view/presets_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/app_harness.dart';
 import '../../helpers/fake_file_access.dart';
+import '../../helpers/keyboard.dart';
 
 void main() {
   Future<(ComposerCubit, PresetsCubit, FakeFileAccess)> openPresets(
@@ -131,5 +134,67 @@ void main() {
 
     expect(presets.state.userPresets, isEmpty);
     expect(composer.state.preset, isNull);
+  });
+
+  testWidgets('renaming the loaded preset survives a later Update', (
+    tester,
+  ) async {
+    final (composer, presets, _) = await openPresets(tester);
+    final mine = await saveMine(tester, presets, 'Mine');
+    composer
+      ..loadPreset(mine)
+      ..setField(['notification', 'title'], 'B');
+
+    await tester.tap(find.byKey(ValueKey('preset-menu-${mine.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rename…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(PresetDetailsDialog.nameKey), 'Renamed');
+    await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
+    await settleAsync(tester);
+    expect(composer.state.preset?.name, 'Renamed');
+    expect(composer.state.isDirty, isTrue, reason: 'the edit is kept');
+
+    await tester.tap(find.byKey(const Key('nav-composer')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(PresetPicker.updateKey));
+    await settleAsync(tester);
+
+    final stored = presets.state.userPresets.single;
+    expect(stored.name, 'Renamed');
+    expect(stored.template, {
+      'notification': {'title': 'B'},
+    });
+    expect(composer.state.preset, stored);
+    expect(composer.state.isDirty, isFalse);
+  });
+
+  testWidgets('a Replace import of the loaded preset shows the new version', (
+    tester,
+  ) async {
+    final (composer, presets, files) = await openPresets(tester);
+    final mine = await saveMine(tester, presets, 'Mine');
+    composer.loadPreset(mine);
+    files.nextOpen = PresetCodec.encode([
+      mine.copyWith(
+        template: const {
+          'notification': {'title': 'Imported'},
+        },
+      ),
+    ], exportedAt: DateTime.utc(2026));
+
+    await tester.tap(find.byKey(PresetsScreen.importKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace'));
+    await settleAsync(tester);
+
+    const imported = {
+      'notification': {'title': 'Imported'},
+    };
+    expect(presets.state.userPresets.single.template, imported);
+    expect(composer.state.template, imported);
+    expect(composer.state.preset, presets.state.userPresets.single);
+    expect(composer.state.isDirty, isFalse);
+    expect(editorController(tester).text, contains('Imported'));
   });
 }

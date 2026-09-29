@@ -262,6 +262,65 @@ void main() {
       expect(cubit.state.values, {'order_id': '7', 'extra': 'x'});
     });
 
+    group('presetUpdated', () {
+      final renamed = preset.copyWith(name: 'Order shipped');
+      final changed = preset.copyWith(
+        template: const {
+          'notification': {'title': 'Order {{order_id}} is on its way'},
+        },
+        variables: const [
+          VariableDef(key: 'order_id', defaultValue: '1'),
+          VariableDef(key: 'eta', defaultValue: 'soon'),
+        ],
+      );
+
+      test('ignores another preset', () {
+        final cubit = build()..loadPreset(preset);
+        cubit.presetUpdated(changed.copyWith(id: 'other'));
+        expect(cubit.state.preset, preset);
+        expect(cubit.state.template, preset.template);
+      });
+
+      test('the same content: takes the new name and stays clean', () {
+        final cubit = build()
+          ..loadPreset(preset)
+          ..setVariableValue('order_id', '7')
+          ..presetUpdated(renamed);
+        expect(cubit.state.preset, renamed);
+        expect(cubit.state.isDirty, isFalse);
+        expect(cubit.state.values, {'order_id': '7'});
+      });
+
+      test('a clean composer loads the new version and keeps values', () {
+        final cubit = build()
+          ..setTargetValue(token)
+          ..loadPreset(preset)
+          ..setVariableValue('order_id', '7')
+          ..presetUpdated(changed);
+        expect(cubit.state.preset, changed);
+        expect(cubit.state.template, changed.template);
+        expect(cubit.state.templateText, contains('is on its way'));
+        expect(cubit.state.variables, changed.variables);
+        expect(cubit.state.values, {'order_id': '7', 'eta': 'soon'});
+        expect(cubit.state.isDirty, isFalse);
+        expect(messageOf(cubit)['notification'], {
+          'title': 'Order 7 is on its way',
+        });
+      });
+
+      test('unsaved edits are kept and stay unsaved', () {
+        final cubit = build()
+          ..loadPreset(preset)
+          ..setField(['notification', 'body'], 'Edited');
+        final edited = cubit.state.template;
+        cubit.presetUpdated(changed);
+        expect(cubit.state.preset, changed);
+        expect(cubit.state.template, edited);
+        expect(cubit.state.variables, preset.variables);
+        expect(cubit.state.isDirty, isTrue);
+      });
+    });
+
     test('detachPreset forgets a deleted preset', () {
       final cubit = build()
         ..loadPreset(preset)

@@ -72,15 +72,24 @@ class PresetsCubit extends Cubit<PresetsState> {
     return preset;
   }
 
-  /// "Update preset": overwrites [preset] with the composer's template and
-  /// variables. Throws [StateError] for a built-in preset, and
-  /// [ArgumentError] when the template sets the target.
+  /// "Update preset": overwrites the stored preset [id] with the composer's
+  /// template and variables. Its current name, description and createdAt
+  /// stay, so a rename since the composer loaded it is kept. Throws
+  /// [StateError] for a missing or built-in preset, and [ArgumentError] when
+  /// the template sets the target.
   Future<Preset> update(
-    Preset preset, {
+    String id, {
     required Map<String, Object?> template,
     required List<VariableDef> variables,
   }) async {
     _checkTemplate(template);
+    final preset = state.byId(id);
+    if (preset == null) {
+      throw StateError('The preset no longer exists.');
+    }
+    if (preset.builtIn) {
+      throw StateError('Built-in presets are read-only.');
+    }
     final updated = preset.copyWith(
       template: template,
       variables: variables,

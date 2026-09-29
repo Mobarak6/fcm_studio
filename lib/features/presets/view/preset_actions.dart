@@ -79,13 +79,14 @@ Future<void> savePresetAs(BuildContext context) async {
   }
 }
 
-/// "Update preset": overwrites the loaded user preset.
+/// "Update preset": overwrites the loaded user preset. Does nothing when
+/// nothing changed.
 Future<void> updatePreset(BuildContext context) async {
   final composer = context.read<ComposerCubit>();
   final presets = context.read<PresetsCubit>();
   final errors = context.read<AppErrorCubit>();
   final preset = composer.state.preset;
-  if (preset == null || preset.builtIn) {
+  if (preset == null || preset.builtIn || !composer.state.isDirty) {
     return;
   }
   final template = _savableTemplate(context);
@@ -94,7 +95,7 @@ Future<void> updatePreset(BuildContext context) async {
   }
   try {
     final updated = await presets.update(
-      preset,
+      preset.id,
       template: template,
       variables: composer.state.variables,
     );

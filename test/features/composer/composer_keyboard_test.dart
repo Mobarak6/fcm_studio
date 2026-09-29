@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:fcm_studio/features/composer/view/send_panel.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
+import 'package:fcm_studio/features/presets/view/preset_details_dialog.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -119,6 +120,39 @@ void main() {
         'notification': {'title': 'B'},
       });
       expect(composer.state.isDirty, isFalse);
+    },
+    variant: _windows,
+  );
+
+  testWidgets(
+    'Ctrl+S with a user preset loaded and nothing changed writes nothing',
+    (tester) async {
+      final (_, composer) = await pumpAppWithProject(tester);
+      final presets = readCubit<PresetsCubit>(tester);
+      final mine = (await tester.runAsync(
+        () => presets.saveAs(
+          name: 'Mine',
+          template: const {
+            'notification': {'title': 'A'},
+          },
+          variables: const [],
+        ),
+      ))!;
+      composer.loadPreset(mine);
+      await tester.pump();
+      // Real time passes, so a write would change updatedAt.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 5)),
+      );
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await settleAsync(tester);
+
+      expect(find.byType(PresetDetailsDialog), findsNothing);
+      expect(presets.state.userPresets.single, mine);
+      expect(presets.state.userPresets.single.updatedAt, mine.updatedAt);
     },
     variant: _windows,
   );

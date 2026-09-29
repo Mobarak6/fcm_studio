@@ -88,7 +88,7 @@ void main() {
       );
       clock.advance(const Duration(minutes: 1));
       final updated = await cubit.update(
-        saved,
+        saved.id,
         template: const {
           'notification': {'title': 'Fixed'},
         },
@@ -99,14 +99,39 @@ void main() {
       expect(updated.createdAt, saved.createdAt);
       await expectLater(
         cubit.update(
-          cubit.state.builtIns.first,
+          cubit.state.builtIns.first.id,
           template: template,
           variables: variables,
         ),
         throwsStateError,
       );
+      await expectLater(
+        cubit.update('missing', template: template, variables: variables),
+        throwsStateError,
+      );
     },
   );
+
+  test('Update keeps the stored name and description', () async {
+    final cubit = await loaded();
+    final saved = await cubit.saveAs(
+      name: 'A',
+      template: template,
+      variables: variables,
+    );
+    await cubit.rename(saved, name: 'B', description: 'Renamed');
+    final updated = await cubit.update(
+      saved.id,
+      template: const {
+        'notification': {'title': 'Fixed'},
+      },
+      variables: variables,
+    );
+    expect(updated.name, 'B');
+    expect(updated.description, 'Renamed');
+    expect(updated.createdAt, saved.createdAt);
+    expect(cubit.state.userPresets.single, updated);
+  });
 
   test('Save as and Update refuse a template that sets the target', () async {
     expect(
@@ -143,7 +168,7 @@ void main() {
     );
     await expectLater(
       cubit.update(
-        saved,
+        saved.id,
         template: const {'condition': "'a' in topics", ...template},
         variables: variables,
       ),

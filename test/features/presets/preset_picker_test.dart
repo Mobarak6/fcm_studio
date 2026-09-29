@@ -159,6 +159,32 @@ void main() {
     expect(composer.state.isDirty, isTrue);
   });
 
+  testWidgets('Update with invalid JSON says to fix it first', (tester) async {
+    final (_, composer) = await pumpAppWithProject(tester);
+    final presets = readCubit<PresetsCubit>(tester);
+    final mine = (await tester.runAsync(
+      () => presets.saveAs(
+        name: 'Mine',
+        template: const {
+          'notification': {'title': 'A'},
+        },
+        variables: const [],
+      ),
+    ))!;
+    composer
+      ..loadPreset(mine)
+      ..updateTemplateText('{"notification": ');
+    await tester.pump();
+
+    await tester.tap(find.byKey(PresetPicker.updateKey));
+    await settleAsync(tester);
+    expect(
+      find.text('Fix the JSON before saving it as a preset.'),
+      findsOneWidget,
+    );
+    expect(presets.state.userPresets.single, mine);
+  });
+
   testWidgets('switching presets with unsaved changes asks first', (
     tester,
   ) async {

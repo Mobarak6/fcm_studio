@@ -154,6 +154,35 @@ class ComposerCubit extends Cubit<ComposerState> {
   /// Records that the current template was saved as [preset] (clears the dot).
   void presetSaved(Preset preset) => emit(state.copyWith(preset: preset));
 
+  /// The loaded preset changed elsewhere: renamed, or replaced by an import.
+  /// Ignored unless [preset] is the loaded one. Unsaved edits are kept (the
+  /// dot stays); otherwise the composer shows the new version, keeping the
+  /// values of variables that still exist.
+  void presetUpdated(Preset preset) {
+    if (state.preset?.id != preset.id) {
+      return;
+    }
+    if (state.hasContentOf(preset) || state.isDirty) {
+      emit(state.copyWith(preset: preset));
+      return;
+    }
+    emit(
+      _rendered(
+        state.copyWith(
+          templateText: _encoder.convert(preset.template),
+          template: TemplateEdits.copy(preset.template),
+          jsonError: null,
+          variables: preset.variables,
+          values: {
+            for (final v in preset.variables)
+              v.key: state.values[v.key] ?? v.defaultValue,
+          },
+          preset: preset,
+        ),
+      ),
+    );
+  }
+
   /// Forgets the loaded preset if it is [presetId], e.g. after it was deleted.
   void detachPreset(String presetId) {
     if (state.preset?.id == presetId) {

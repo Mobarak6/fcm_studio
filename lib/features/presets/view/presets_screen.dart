@@ -130,11 +130,12 @@ class _PresetsScreenState extends State<PresetsScreen> {
                   presets.state.nameTaken(name, exceptId: preset.id),
             );
             if (details != null) {
-              await presets.rename(
+              final renamed = await presets.rename(
                 preset,
                 name: details.name,
                 description: details.description,
               );
+              composer.presetUpdated(renamed);
             }
           case PresetAction.export:
             await _export([preset]);
@@ -193,6 +194,7 @@ class _PresetsScreenState extends State<PresetsScreen> {
 
   Future<void> _import() async {
     final cubit = context.read<PresetsCubit>();
+    final composer = context.read<ComposerCubit>();
     final files = context.read<FileAccess>();
     final messenger = ScaffoldMessenger.of(context);
     final text = await files.openText(
@@ -236,6 +238,12 @@ class _PresetsScreenState extends State<PresetsScreen> {
       choice = picked;
     }
     final count = await cubit.applyImport(preview, choice);
+    // Replace keeps the id, so the composer may hold an old copy.
+    final loadedId = composer.state.preset?.id;
+    final reloaded = loadedId == null ? null : cubit.state.byId(loadedId);
+    if (reloaded != null) {
+      composer.presetUpdated(reloaded);
+    }
     messenger.showSnackBar(
       SnackBar(
         content: Text('Imported $count preset${count == 1 ? '' : 's'}.'),

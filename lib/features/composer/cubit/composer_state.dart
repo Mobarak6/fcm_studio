@@ -84,13 +84,15 @@ class ComposerState extends Equatable {
   /// spec §6). Variable values don't count.
   bool get isDirty {
     final preset = this.preset;
-    if (preset == null) {
-      return false;
-    }
+    return preset != null && !hasContentOf(preset);
+  }
+
+  /// True when the template and the variables equal [preset]'s.
+  bool hasContentOf(Preset preset) {
     final template = this.template;
-    return template == null ||
-        jsonEncode(template) != jsonEncode(preset.template) ||
-        !listEquals(variables, preset.variables);
+    return template != null &&
+        jsonEncode(template) == jsonEncode(preset.template) &&
+        listEquals(variables, preset.variables);
   }
 
   static const Object _unset = Object();
