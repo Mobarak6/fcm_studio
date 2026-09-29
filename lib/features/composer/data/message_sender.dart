@@ -14,6 +14,8 @@ import 'package:fcm_studio/features/history/domain/history_entry.dart';
 import 'package:fcm_studio/features/projects/domain/access_token_resolver.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
 import 'package:fcm_studio/features/targets/data/targets_repository.dart';
+import 'package:fcm_studio/features/targets/domain/saved_target.dart';
+import 'package:flutter/foundation.dart';
 
 /// The result of [MessageSender.send].
 class SendOutcome extends Equatable {
@@ -96,9 +98,17 @@ class MessageSender {
       FcmSendSuccess() => null,
     };
 
+    // Every attempt is recorded (spec §7.2), so a saved-targets problem
+    // only costs the label.
+    SavedTarget? saved;
+    try {
+      saved = await _targets.findMatching(target);
+    } catch (e) {
+      _debugLog('Could not look up the saved target: ${redact('$e')}');
+    }
+
     String? historyError;
     try {
-      final saved = await _targets.findMatching(target);
       final responseBody = result.responseBody;
       await _history.add(
         HistoryEntry(
@@ -126,11 +136,17 @@ class MessageSender {
           duration: result.duration,
         ),
       );
-      if (saved != null) {
-        await _targets.markUsed(target, sentAt);
-      }
     } catch (e) {
       historyError = 'Could not save this send to history: ${redact('$e')}';
+    }
+
+    if (saved != null) {
+      try {
+        await _targets.markUsed(target, sentAt);
+      } catch (e) {
+        // Only the saved targets' order depends on it.
+        _debugLog('Could not mark the saved target as used: ${redact('$e')}');
+      }
     }
     return SendOutcome(
       result: result,
@@ -161,6 +177,12 @@ class MessageSender {
       accessToken: token,
       extraHeaders: auth?.extraHeaders(project.id) ?? const {},
     );
+  }
+
+  static void _debugLog(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
   }
 
   static String _code(FcmError error) =>

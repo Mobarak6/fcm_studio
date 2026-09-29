@@ -27,6 +27,22 @@ class _BrokenHistory extends HistoryRepository {
   Future<void> add(HistoryEntry entry) => Future.error(StateError('disk full'));
 }
 
+class _BrokenLookup extends TargetsRepository {
+  _BrokenLookup(AppDatabase database) : super(database: database);
+
+  @override
+  Future<SavedTarget?> findMatching(Target target) =>
+      Future.error(StateError('targets store is broken'));
+}
+
+class _BrokenMarkUsed extends TargetsRepository {
+  _BrokenMarkUsed(AppDatabase database) : super(database: database);
+
+  @override
+  Future<void> markUsed(Target target, DateTime at) =>
+      Future.error(StateError('targets store is broken'));
+}
+
 void main() {
   const token = 'abc:APA91bxyz';
   const request = {
@@ -52,11 +68,12 @@ void main() {
     http.Client? client,
     AccessTokenResolver? auth,
     HistoryRepository? historyRepository,
+    TargetsRepository? targetsRepository,
   }) => MessageSender(
     fcmClient: FcmClient(httpClient: client ?? fakeGoogle()),
     auth: auth ?? FakeResolver(),
     history: historyRepository ?? history,
-    targets: targets,
+    targets: targetsRepository ?? targets,
     clock: clock,
     newId: () => 'entry-1',
   );
@@ -179,6 +196,41 @@ void main() {
         );
     expect(outcome.result, isA<FcmSendSuccess>());
     expect(outcome.historyError, contains('disk full'));
+  });
+
+  test('a failing saved-target lookup still records the send', () async {
+    final outcome = await build(targetsRepository: _BrokenLookup(database))
+        .send(
+          project: testProject,
+          request: request,
+          target: const TokenTarget(token),
+        );
+    expect(outcome.result, isA<FcmSendSuccess>());
+    expect(outcome.historyError, isNull);
+    final entry = (await history.loadAll()).single;
+    expect(entry.target.value, token);
+    expect(entry.target.label, isNull);
+  });
+
+  test('a failing markUsed is not reported as a history error', () async {
+    final failing = _BrokenMarkUsed(database);
+    await failing.save(
+      SavedTarget(
+        id: 't',
+        label: 'Redmi',
+        kind: TargetKind.token,
+        value: token,
+        lastUsedAt: DateTime.utc(2026),
+      ),
+    );
+    final outcome = await build(targetsRepository: failing).send(
+      project: testProject,
+      request: request,
+      target: const TokenTarget(token),
+    );
+    expect(outcome.result, isA<FcmSendSuccess>());
+    expect(outcome.historyError, isNull);
+    expect((await history.loadAll()).single.target.label, 'Redmi');
   });
 
   test('curl includes a current access token only when asked', () async {
