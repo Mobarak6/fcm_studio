@@ -3,6 +3,7 @@ import 'package:fcm_studio/features/composer/domain/target.dart';
 import 'package:fcm_studio/features/targets/data/targets_repository.dart';
 import 'package:fcm_studio/features/targets/domain/saved_target.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sembast/sembast.dart';
 
 void main() {
   late AppDatabase database;
@@ -47,6 +48,24 @@ void main() {
     await repository.markUsed(const TopicTarget('news'), later);
     await changed;
     expect((await repository.loadAll()).single.lastUsedAt, later);
+  });
+
+  test('a stored target that cannot be read is skipped', () async {
+    await repository.save(topic('a', 'news'));
+    final store = stringMapStoreFactory.store('targets');
+    await store.record('missing-fields').put(database.db, {'id': 'x'});
+    await store.record('unknown-kind').put(database.db, {
+      ...topic('b', 'sport').toJson(),
+      'id': 'unknown-kind',
+      'kind': 'carrier-pigeon',
+    });
+    await store.record('bad-date').put(database.db, {
+      ...topic('c', 'weather').toJson(),
+      'id': 'bad-date',
+      'lastUsedAt': 'yesterday',
+    });
+    expect((await repository.loadAll()).map((t) => t.id), ['a']);
+    expect((await repository.findMatching(const TopicTarget('news')))?.id, 'a');
   });
 
   test('remove deletes the target', () async {

@@ -104,6 +104,61 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Save as refuses a template that sets the target and saves nothing',
+    (tester) async {
+      final (_, composer) = await pumpAppWithProject(tester);
+      final presets = readCubit<PresetsCubit>(tester);
+      composer.updateTemplateText(
+        '{"token": "abc", "notification": {"title": "Hi"}}',
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(PresetPicker.saveAsKey));
+      await tester.pumpAndSettle();
+      expect(find.byType(PresetDetailsDialog), findsNothing);
+      expect(
+        find.text(
+          'The template sets "token"; remove it — the target is set in the '
+          'Target field.',
+        ),
+        findsOneWidget,
+      );
+      await settleAsync(tester);
+      expect(presets.state.userPresets, isEmpty);
+    },
+  );
+
+  testWidgets('Update refuses a template that sets the target', (tester) async {
+    final (_, composer) = await pumpAppWithProject(tester);
+    final presets = readCubit<PresetsCubit>(tester);
+    final mine = (await tester.runAsync(
+      () => presets.saveAs(
+        name: 'Mine',
+        template: const {
+          'notification': {'title': 'A'},
+        },
+        variables: const [],
+      ),
+    ))!;
+    composer
+      ..loadPreset(mine)
+      ..updateTemplateText('{"topic": "news", "notification": {"title": "A"}}');
+    await tester.pump();
+
+    await tester.tap(find.byKey(PresetPicker.updateKey));
+    await settleAsync(tester);
+    expect(
+      find.text(
+        'The template sets "topic"; remove it — the target is set in the '
+        'Target field.',
+      ),
+      findsOneWidget,
+    );
+    expect(presets.state.userPresets.single, mine);
+    expect(composer.state.isDirty, isTrue);
+  });
+
   testWidgets('switching presets with unsaved changes asks first', (
     tester,
   ) async {

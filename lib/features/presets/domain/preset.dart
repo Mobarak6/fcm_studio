@@ -32,13 +32,12 @@ class Preset extends Equatable {
     if (template is! Map<String, Object?>) {
       throw FormatException('"$name" has no "template" object.');
     }
-    for (final field in Target.messageFields) {
-      if (template.containsKey(field)) {
-        throw FormatException(
-          '"$name" sets "$field" in its template; '
-          'the target is never part of a preset.',
-        );
-      }
+    final targetField = _targetField(template);
+    if (targetField != null) {
+      throw FormatException(
+        '"$name" sets "$targetField" in its template; '
+        'the target is never part of a preset.',
+      );
     }
     final rawVariables = json['variables'] ?? const <Object?>[];
     if (rawVariables is! List<Object?>) {
@@ -87,6 +86,26 @@ class Preset extends Equatable {
   final bool builtIn;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Why [template] can't be stored in a preset, or null when it can.
+  /// A preset never holds the target (`token`, `topic` or `condition`).
+  static String? templateProblem(Map<String, Object?> template) {
+    final field = _targetField(template);
+    return field == null
+        ? null
+        : 'The template sets "$field"; remove it — the target is set in the '
+              'Target field.';
+  }
+
+  /// The first target field that [template] sets, if any.
+  static String? _targetField(Map<String, Object?> template) {
+    for (final field in Target.messageFields) {
+      if (template.containsKey(field)) {
+        return field;
+      }
+    }
+    return null;
+  }
 
   static DateTime _date(Object? value) =>
       (value is String ? DateTime.tryParse(value) : null)?.toUtc() ??

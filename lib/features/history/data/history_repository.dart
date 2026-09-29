@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fcm_studio/core/storage/app_database.dart';
+import 'package:fcm_studio/core/storage/stored_records.dart';
 import 'package:fcm_studio/features/history/domain/history_entry.dart';
 import 'package:sembast/sembast.dart';
 
@@ -37,15 +38,16 @@ class HistoryRepository {
     _changes.add(null);
   }
 
-  /// Newest first.
+  /// Newest first. A record that can't be read is skipped.
   Future<List<HistoryEntry>> loadAll() async {
     final records = await _store.find(
       _db,
       finder: Finder(sortOrders: [SortOrder('sentAt', false)]),
     );
-    return records
-        .map((record) => HistoryEntry.fromJson(record.value))
-        .toList();
+    return [
+      for (final record in records)
+        ?readStoredRecord(record, HistoryEntry.fromJson),
+    ];
   }
 
   Future<void> clear() async {

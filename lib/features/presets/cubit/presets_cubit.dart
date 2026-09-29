@@ -22,10 +22,20 @@ class PresetsCubit extends Cubit<PresetsState> {
   final Clock _clock;
   final IdGenerator _newId;
 
+  /// Loads the built-in and the user presets. When the user presets can't be
+  /// read, the built-in ones still appear and the error is rethrown.
   Future<void> load() async {
     emit(state.copyWith(status: PresetsStatus.loading));
     final builtIns = await _repository.loadBuiltIns();
-    final userPresets = await _repository.loadUserPresets();
+    final List<Preset> userPresets;
+    try {
+      userPresets = await _repository.loadUserPresets();
+    } catch (_) {
+      if (!isClosed) {
+        emit(state.copyWith(status: PresetsStatus.ready, builtIns: builtIns));
+      }
+      rethrow;
+    }
     if (isClosed) {
       return;
     }
@@ -39,12 +49,14 @@ class PresetsCubit extends Cubit<PresetsState> {
   }
 
   /// "Save as preset": a new preset from the composer's template and variables.
+  /// Throws [ArgumentError] when the template sets the target.
   Future<Preset> saveAs({
     required String name,
     required Map<String, Object?> template,
     required List<VariableDef> variables,
     String description = '',
   }) async {
+    _checkTemplate(template);
     final now = _clock.now();
     final preset = Preset(
       id: _newId(),
@@ -61,12 +73,14 @@ class PresetsCubit extends Cubit<PresetsState> {
   }
 
   /// "Update preset": overwrites [preset] with the composer's template and
-  /// variables. Throws [StateError] for a built-in preset.
+  /// variables. Throws [StateError] for a built-in preset, and
+  /// [ArgumentError] when the template sets the target.
   Future<Preset> update(
     Preset preset, {
     required Map<String, Object?> template,
     required List<VariableDef> variables,
   }) async {
+    _checkTemplate(template);
     final updated = preset.copyWith(
       template: template,
       variables: variables,
@@ -161,6 +175,14 @@ class PresetsCubit extends Cubit<PresetsState> {
         ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())),
       ),
     );
+  }
+
+  /// A safety net: the UI checks [Preset.templateProblem] before saving.
+  static void _checkTemplate(Map<String, Object?> template) {
+    final problem = Preset.templateProblem(template);
+    if (problem != null) {
+      throw ArgumentError(problem);
+    }
   }
 
   Set<String> _takenNames() => {

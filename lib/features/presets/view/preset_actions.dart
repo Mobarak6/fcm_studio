@@ -54,13 +54,8 @@ Future<void> savePresetAs(BuildContext context) async {
   final composer = context.read<ComposerCubit>();
   final presets = context.read<PresetsCubit>();
   final errors = context.read<AppErrorCubit>();
-  final template = composer.state.template;
+  final template = _savableTemplate(context);
   if (template == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fix the JSON before saving it as a preset.'),
-      ),
-    );
     return;
   }
   final details = await showPresetDetailsDialog(
@@ -90,8 +85,11 @@ Future<void> updatePreset(BuildContext context) async {
   final presets = context.read<PresetsCubit>();
   final errors = context.read<AppErrorCubit>();
   final preset = composer.state.preset;
-  final template = composer.state.template;
-  if (preset == null || preset.builtIn || template == null) {
+  if (preset == null || preset.builtIn) {
+    return;
+  }
+  final template = _savableTemplate(context);
+  if (template == null) {
     return;
   }
   try {
@@ -104,4 +102,21 @@ Future<void> updatePreset(BuildContext context) async {
   } catch (e) {
     errors.report(e, context: 'Could not update the preset');
   }
+}
+
+/// The composer's template when it can be saved as a preset. Otherwise null,
+/// with a snackbar that says why: the JSON is invalid, or the template sets
+/// the target.
+Map<String, Object?>? _savableTemplate(BuildContext context) {
+  final template = context.read<ComposerCubit>().state.template;
+  final problem = template == null
+      ? 'Fix the JSON before saving it as a preset.'
+      : Preset.templateProblem(template);
+  if (problem != null) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(problem)));
+    return null;
+  }
+  return template;
 }

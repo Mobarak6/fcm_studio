@@ -1,4 +1,5 @@
 import 'package:fcm_studio/core/storage/app_database.dart';
+import 'package:fcm_studio/core/storage/stored_records.dart';
 import 'package:fcm_studio/features/presets/domain/preset.dart';
 import 'package:fcm_studio/features/presets/domain/preset_codec.dart';
 import 'package:sembast/sembast.dart';
@@ -23,11 +24,13 @@ class PresetsRepository {
       preset.copyWith(builtIn: true),
   ];
 
-  /// The user's presets, sorted by name.
+  /// The user's presets, sorted by name. A record that can't be read is
+  /// skipped, so one bad record never hides the others.
   Future<List<Preset>> loadUserPresets() async {
     final records = await _store.find(_db);
-    return records.map((record) => Preset.fromJson(record.value)).toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return [
+      for (final record in records) ?readStoredRecord(record, Preset.fromJson),
+    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
   Future<void> save(Preset preset) async {

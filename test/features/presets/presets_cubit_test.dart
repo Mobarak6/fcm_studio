@@ -3,12 +3,23 @@ import 'dart:convert';
 import 'package:fcm_studio/core/storage/app_database.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/presets/data/presets_repository.dart';
+import 'package:fcm_studio/features/presets/domain/preset.dart';
 import 'package:fcm_studio/features/presets/domain/preset_codec.dart';
 import 'package:fcm_studio/features/presets/domain/variable_def.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sembast/sembast.dart';
 
 import '../../helpers/fixed_clock.dart';
 import '../../helpers/presets_fixture.dart';
+
+class _BrokenUserPresets extends PresetsRepository {
+  _BrokenUserPresets(AppDatabase database)
+    : super(database: database, loadBuiltInJson: loadBuiltInPresetsFromFile);
+
+  @override
+  Future<List<Preset>> loadUserPresets() =>
+      Future.error(StateError('disk error'));
+}
 
 void main() {
   late AppDatabase database;
@@ -96,6 +107,83 @@ void main() {
       );
     },
   );
+
+  test('Save as and Update refuse a template that sets the target', () async {
+    expect(
+      Preset.templateProblem(const {
+        'topic': 'news',
+        'notification': <String, Object?>{},
+      }),
+      'The template sets "topic"; remove it — the target is set in the '
+      'Target field.',
+    );
+    expect(Preset.templateProblem(template), isNull);
+
+    final cubit = await loaded();
+    await expectLater(
+      cubit.saveAs(
+        name: 'With token',
+        template: const {'token': 'abc', ...template},
+        variables: const [],
+      ),
+      throwsA(
+        isA<ArgumentError>().having(
+          (e) => e.message,
+          'message',
+          contains('"token"'),
+        ),
+      ),
+    );
+    expect(cubit.state.userPresets, isEmpty);
+
+    final saved = await cubit.saveAs(
+      name: 'A',
+      template: template,
+      variables: variables,
+    );
+    await expectLater(
+      cubit.update(
+        saved,
+        template: const {'condition': "'a' in topics", ...template},
+        variables: variables,
+      ),
+      throwsArgumentError,
+    );
+    final restarted = await loaded();
+    expect(restarted.state.userPresets, [saved]);
+  });
+
+  test('a stored preset that cannot be read is skipped', () async {
+    final cubit = await loaded();
+    final saved = await cubit.saveAs(
+      name: 'A',
+      template: template,
+      variables: variables,
+    );
+    final store = stringMapStoreFactory.store('presets');
+    await store.record('bad-template').put(database.db, {
+      ...saved.toJson(),
+      'id': 'bad-template',
+      'name': 'Bad',
+      'template': {'token': 'abc'},
+    });
+    await store.record('bad-types').put(database.db, {
+      'id': 'bad-types',
+      'name': 42,
+    });
+
+    final restarted = await loaded();
+    expect(restarted.state.status, PresetsStatus.ready);
+    expect(restarted.state.builtIns, hasLength(4));
+    expect(restarted.state.userPresets, [saved]);
+  });
+
+  test('the built-in presets load even when the user presets cannot', () async {
+    final cubit = PresetsCubit(repository: _BrokenUserPresets(database));
+    await expectLater(cubit.load(), throwsStateError);
+    expect(cubit.state.status, PresetsStatus.ready);
+    expect(cubit.state.builtIns, hasLength(4));
+  });
 
   test('duplicate makes an editable copy with a free name', () async {
     final cubit = await loaded();

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fcm_studio/core/storage/app_database.dart';
+import 'package:fcm_studio/core/storage/stored_records.dart';
 import 'package:fcm_studio/features/composer/domain/target.dart';
 import 'package:fcm_studio/features/targets/domain/saved_target.dart';
 import 'package:sembast/sembast.dart';
@@ -16,11 +17,14 @@ class TargetsRepository {
   /// Fires after every change, so screens can reload.
   Stream<void> get changes => _changes.stream;
 
-  /// All saved targets, most recently used first.
+  /// All saved targets, most recently used first. A record that can't be
+  /// read is skipped.
   Future<List<SavedTarget>> loadAll() async {
     final records = await _store.find(_db);
-    return records.map((record) => SavedTarget.fromJson(record.value)).toList()
-      ..sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
+    return [
+      for (final record in records)
+        ?readStoredRecord(record, SavedTarget.fromJson),
+    ]..sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
   }
 
   Future<void> save(SavedTarget target) async {
