@@ -19,7 +19,7 @@ String frame(String payload) =>
     '${utf8.encode(payload).length.toRadixString(16).padLeft(4, '0')}$payload';
 
 Future<List<List<AdbDevice>>> decode(List<String> chunks) =>
-    Stream.fromIterable([
+    Stream<List<int>>.fromIterable([
       for (final chunk in chunks) utf8.encode(chunk),
     ]).transform(const TrackDevicesDecoder()).toList();
 

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:fcm_studio/features/devices/data/parsers/device_list_parser.dart';
 import 'package:fcm_studio/features/devices/domain/adb_device.dart';
@@ -9,11 +8,11 @@ import 'package:fcm_studio/features/devices/domain/adb_device.dart';
 /// 4-hex-digit length followed by that many bytes of device list (spec §9.2).
 /// A message may arrive in several chunks, and a chunk may hold several.
 class TrackDevicesDecoder
-    extends StreamTransformerBase<Uint8List, List<AdbDevice>> {
+    extends StreamTransformerBase<List<int>, List<AdbDevice>> {
   const TrackDevicesDecoder();
 
   @override
-  Stream<List<AdbDevice>> bind(Stream<Uint8List> stream) async* {
+  Stream<List<AdbDevice>> bind(Stream<List<int>> stream) async* {
     final buffer = <int>[];
     await for (final chunk in stream) {
       buffer.addAll(chunk);
