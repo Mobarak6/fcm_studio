@@ -77,15 +77,17 @@ class ProcessAdbService implements AdbService {
               onError: controller.addError,
               onDone: () => unawaited(controller.close()),
             );
-      } on AdbException catch (e) {
-        controller.addError(e);
+      } on Object catch (e, st) {
+        controller.addError(e, st);
         await controller.close();
       }
     }
 
     controller = StreamController<List<AdbDevice>>(
       onListen: () => unawaited(begin()),
-      // Kill adb first: cancelling a pipe that is still open can wait for it.
+      // Kill adb first. TrackDevicesDecoder.bind is an async* parked in
+      // `await for`, so cancelling its stream waits until stdout ends; only
+      // the kill ends it. Don't swap these or go back to `yield*`.
       onCancel: () {
         cancelled = true;
         process?.kill();
@@ -164,32 +166,67 @@ class ProcessAdbService implements AdbService {
   }
 
   @override
-  Stream<LogcatProgress> readTokenFromLogcat(
-    String serial,
-    String package,
-  ) async* {
-    try {
-      yield const LogcatRestartingApp();
-      await _shell(serial, 'am force-stop $package');
-      await launchApp(serial, package);
-      yield const LogcatWaitingForApp();
-      final pid = await _waitForPid(serial, package);
-      if (pid == null) {
-        yield const LogcatAppDidNotStart();
-        return;
+  Stream<LogcatProgress> readTokenFromLogcat(String serial, String package) {
+    late final StreamController<LogcatProgress> controller;
+    RunningProcess? logcat;
+    var cancelled = false;
+
+    void emit(LogcatProgress progress) {
+      if (!cancelled) {
+        controller.add(progress);
       }
-      yield LogcatWatching(pid);
-      final token = await _watchLogcat(serial, pid);
-      yield token == null ? const LogcatNoToken() : LogcatFound(token);
-    } on AdbException catch (e) {
-      yield LogcatFailed(e.message);
     }
+
+    Future<void> body() async {
+      try {
+        emit(const LogcatRestartingApp());
+        await _shell(serial, 'am force-stop $package');
+        await launchApp(serial, package);
+        if (cancelled) return;
+        emit(const LogcatWaitingForApp());
+        final pid = await _waitForPid(serial, package, () => cancelled);
+        if (cancelled) return;
+        if (pid == null) {
+          emit(const LogcatAppDidNotStart());
+          return;
+        }
+        emit(LogcatWatching(pid));
+        final token = await _watchLogcat(
+          serial,
+          pid,
+          onStarted: (process) {
+            logcat = process;
+            if (cancelled) process.kill();
+          },
+        );
+        emit(token == null ? const LogcatNoToken() : LogcatFound(token));
+      } on AdbException catch (e) {
+        emit(LogcatFailed(e.message));
+      } finally {
+        await controller.close();
+      }
+    }
+
+    controller = StreamController<LogcatProgress>(
+      onListen: () => unawaited(body()),
+      // Kill logcat on cancel: the body is parked on its stdout, and only the
+      // kill ends it (the same reason as in trackDevices).
+      onCancel: () {
+        cancelled = true;
+        logcat?.kill();
+      },
+    );
+    return controller.stream;
   }
 
   /// Polls `pidof` until the app runs, or gives up after [_appStartTimeout].
-  Future<int?> _waitForPid(String serial, String package) async {
+  Future<int?> _waitForPid(
+    String serial,
+    String package,
+    bool Function() isCancelled,
+  ) async {
     final stopwatch = Stopwatch()..start();
-    while (stopwatch.elapsed < _appStartTimeout) {
+    while (!isCancelled() && stopwatch.elapsed < _appStartTimeout) {
       final output = await _run(['-s', serial, 'shell', 'pidof', package]);
       final pid = int.tryParse(
         output.stdout.trim().split(RegExp(r'\s+')).first,
@@ -204,8 +241,13 @@ class ProcessAdbService implements AdbService {
 
   /// `logcat --pid` includes the process's earlier lines. Never `logcat -c`:
   /// other tools keep their logs (spec §9.3).
-  Future<String?> _watchLogcat(String serial, int pid) async {
+  Future<String?> _watchLogcat(
+    String serial,
+    int pid, {
+    required void Function(RunningProcess process) onStarted,
+  }) async {
     final process = await _start(['-s', serial, 'logcat', '--pid=$pid']);
+    onStarted(process);
     try {
       return await process.stdout
           .transform(const Utf8Decoder(allowMalformed: true))
@@ -244,7 +286,9 @@ class ProcessAdbService implements AdbService {
   }
 
   String _failed(List<String> arguments, ProcessOutput output) {
-    final details = output.combined.trim();
+    final details = output.combined
+        .replaceAll(FcmTokenPattern.inText, '<token>')
+        .trim();
     return '`${describeCommand(_adbPath, arguments)}` failed: '
         '${details.isEmpty ? 'exit code ${output.exitCode}' : details}';
   }

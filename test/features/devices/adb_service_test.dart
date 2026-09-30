@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fcm_studio/features/devices/data/adb_service.dart';
 import 'package:fcm_studio/features/devices/data/process_runner.dart';
 import 'package:fcm_studio/features/devices/domain/adb_device.dart';
@@ -67,6 +69,33 @@ void main() {
         );
       },
     );
+  });
+
+  group('track-devices lifecycle', () {
+    test('cancelled before adb starts, still kills it', () async {
+      final tracker = FakeRunningProcess();
+      runner.onStart('$adb track-devices -l', () => tracker);
+      final subscription = service().trackDevices().listen((_) {});
+      await subscription.cancel();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(tracker.killed, isTrue);
+    });
+
+    test('a decoder error is a stream error, then done, adb killed', () async {
+      final tracker = FakeRunningProcess();
+      runner.onStart('$adb track-devices -l', () => tracker);
+      final errors = <Object>[];
+      final done = Completer<void>();
+      service().trackDevices().listen(
+        (_) {},
+        onError: errors.add,
+        onDone: done.complete,
+      );
+      tracker.emit('zzzz');
+      await done.future.timeout(const Duration(seconds: 2));
+      expect(errors, hasLength(1));
+      expect(tracker.killed, isTrue);
+    });
   });
 
   group('details and packages', () {
@@ -161,6 +190,13 @@ void main() {
       );
     });
 
+    test('a failure message never contains a token', () async {
+      runner.on(runAs, failed('oops $fakeDeviceToken oops'));
+      final result = await service().readTokenWithRunAs(redmiSerial, package);
+      expect(result, isA<RunAsFailed>());
+      expect((result as RunAsFailed).message, isNot(contains(fakeDeviceToken)));
+    });
+
     test('other failures name the command', () async {
       runner.on(
         runAs,
@@ -235,6 +271,27 @@ void main() {
         const LogcatWatching(4242),
         LogcatFound(fakeDeviceToken),
       ]);
+      expect(logcat.killed, isTrue);
+    });
+
+    test('cancelling kills logcat at once, however long the timeout', () async {
+      scriptRestart(pidof: <ProcessOutput>[ok('4242\n')]);
+      final logcat = FakeRunningProcess()..emit('10-04 I/flutter: nothing\n');
+      runner.onStart('$adb -s $redmiSerial logcat --pid=4242', () => logcat);
+      final slow = ProcessAdbService(
+        runner: runner,
+        adbPath: adb,
+        pollInterval: const Duration(milliseconds: 1),
+        logcatTimeout: const Duration(minutes: 1),
+      );
+      final watching = Completer<void>();
+      final subscription = slow
+          .readTokenFromLogcat(redmiSerial, package)
+          .listen((p) {
+            if (p is LogcatWatching) watching.complete();
+          });
+      await watching.future.timeout(const Duration(seconds: 2));
+      await subscription.cancel().timeout(const Duration(milliseconds: 500));
       expect(logcat.killed, isTrue);
     });
 
