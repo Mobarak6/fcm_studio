@@ -188,5 +188,30 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(adb.trackers.where((t) => t.hasListener), isEmpty);
     });
+
+    test('a path change just before close leaves no tracker running', () async {
+      adb.trackerCancelDelay = slow;
+      final bloc = build()..add(const DevicesAdbChanged('/a'));
+      await flush();
+      bloc.add(const DevicesAdbChanged('/b'));
+      await bloc.close();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(adb.trackers.where((t) => t.hasListener), isEmpty);
+    });
+
+    test('a path change while closing leaves no tracker running', () async {
+      adb.trackerCancelDelay = slow;
+      final bloc = build()..add(const DevicesAdbChanged('/a'));
+      await flush();
+      final closing = bloc.close();
+      try {
+        bloc.add(const DevicesAdbChanged('/b'));
+      } on StateError {
+        // Adding to a closed bloc may throw; that is fine too.
+      }
+      await closing;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(adb.trackers.where((t) => t.hasListener), isEmpty);
+    });
   });
 }

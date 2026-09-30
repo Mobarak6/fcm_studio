@@ -41,6 +41,9 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
   /// Bumped when a tracker starts and when tracking stops, so events from an
   /// older tracker are ignored.
   int _generation = 0;
+
+  /// True from the start of close(), which is before [isClosed] is.
+  bool _closing = false;
   final Set<String> _loadingDetails = {};
 
   Future<void> _onAdbChanged(
@@ -48,7 +51,7 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
     Emitter<DevicesState> emit,
   ) async {
     await _stop();
-    if (emit.isDone || isClosed) {
+    if (emit.isDone || isClosed || _closing) {
       return;
     }
     _failures = 0;
@@ -74,7 +77,7 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
 
   void _listen() {
     final service = _service;
-    if (service == null) {
+    if (service == null || _closing) {
       return;
     }
     final generation = ++_generation;
@@ -186,7 +189,7 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
     );
     _restartTimer?.cancel();
     _restartTimer = Timer(delay, () {
-      if (!isClosed) {
+      if (!isClosed && !_closing) {
         add(const _TrackerRestart());
       }
     });
@@ -216,8 +219,11 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
 
   @override
   Future<void> close() async {
+    _closing = true;
     await _stop();
-    return super.close();
+    await super.close();
+    // Handlers that were in flight have finished by now.
+    await _stop();
   }
 }
 
