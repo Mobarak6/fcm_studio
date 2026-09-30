@@ -1,0 +1,201 @@
+import 'dart:async';
+
+import 'package:fcm_studio/features/devices/cubit/token_reader_state.dart';
+import 'package:fcm_studio/features/devices/data/adb_service.dart';
+import 'package:fcm_studio/features/devices/data/recent_packages_repository.dart';
+import 'package:fcm_studio/features/devices/domain/device_token.dart';
+import 'package:fcm_studio/features/devices/domain/token_read_results.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+export 'package:fcm_studio/features/devices/cubit/token_reader_state.dart';
+
+/// Reads an app's FCM token from the selected phone (spec §9.3): `run-as`
+/// for debug builds, then logcat for release builds once the user agrees.
+class TokenReaderCubit extends Cubit<TokenReaderState> {
+  TokenReaderCubit({required this._serviceFor, required this._recent})
+    : super(const TokenReaderState());
+
+  final AdbService Function(String adbPath) _serviceFor;
+  final RecentPackagesRepository _recent;
+  AdbService? _service;
+  StreamSubscription<LogcatProgress>? _logcat;
+  Completer<void>? _logcatDone;
+
+  Future<void> openDevice(String adbPath, String serial) async {
+    await _cancelLogcat();
+    _service = _serviceFor(adbPath);
+    emit(TokenReaderState(serial: serial));
+    await refreshPackages();
+  }
+
+  Future<void> refreshPackages() async {
+    final service = _service;
+    final serial = state.serial;
+    if (service == null || serial == null) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        packagesStatus: PackagesStatus.loading,
+        packagesError: () => null,
+      ),
+    );
+    try {
+      final installed = await service.listPackages(serial);
+      final recent = await _recent.recent(serial);
+      if (isClosed || state.serial != serial) {
+        return;
+      }
+      emit(
+        state.copyWith(
+          packagesStatus: PackagesStatus.ready,
+          installed: installed,
+          recent: recent,
+        ),
+      );
+    } on AdbException catch (e) {
+      if (isClosed || state.serial != serial) {
+        return;
+      }
+      emit(
+        state.copyWith(
+          packagesStatus: PackagesStatus.failed,
+          packagesError: () => e.message,
+        ),
+      );
+    }
+  }
+
+  void search(String query) => emit(state.copyWith(query: query));
+
+  /// Step 1: `run-as` (debug builds).
+  Future<void> readToken(String package, {String? projectNumber}) async {
+    final service = _service;
+    final serial = state.serial;
+    if (service == null || serial == null || state.isBusy) {
+      return;
+    }
+    emit(state.copyWith(read: TokenReading(package)));
+    final result = await service.readTokenWithRunAs(serial, package);
+    if (isClosed || state.serial != serial) {
+      return;
+    }
+    final read = switch (result) {
+      RunAsTokens(:final tokens) => TokenReadFound(
+        package,
+        tokens: tokens,
+        method: TokenReadMethod.runAs,
+        preselectedSenderId: _preselect(tokens, projectNumber),
+      ),
+      RunAsReleaseBuild() => TokenReadReleaseBuild(package),
+      RunAsNoTokenYet() => TokenReadNoTokenYet(package),
+      RunAsNotInstalled() => TokenReadNotInstalled(package),
+      RunAsFailed(:final message) => TokenReadFailed(package, message),
+    };
+    emit(state.copyWith(read: read));
+    if (read is TokenReadFound) {
+      await _remember(serial, package);
+    }
+  }
+
+  /// Step 2 (release builds). Restarts the app, so only after the user
+  /// confirmed. Completes when the step ends.
+  Future<void> readTokenFromLogcat(String package) async {
+    final service = _service;
+    final serial = state.serial;
+    if (service == null || serial == null || state.isBusy) {
+      return;
+    }
+    await _cancelLogcat();
+    emit(
+      state.copyWith(
+        read: TokenReadWatchingLogcat(package, const LogcatRestartingApp()),
+      ),
+    );
+    final done = _logcatDone = Completer<void>();
+    _logcat = service
+        .readTokenFromLogcat(serial, package)
+        .listen(
+          (progress) {
+            if (isClosed || state.serial != serial) {
+              return;
+            }
+            final read = switch (progress) {
+              LogcatFound(:final token) => TokenReadFound(
+                package,
+                tokens: [FoundToken(token: token)],
+                method: TokenReadMethod.logcat,
+              ),
+              LogcatNoToken() => TokenReadLogcatNoToken(package),
+              LogcatAppDidNotStart() => TokenReadAppDidNotStart(package),
+              LogcatFailed(:final message) => TokenReadFailed(package, message),
+              LogcatRestartingApp() ||
+              LogcatWaitingForApp() ||
+              LogcatWatching() => TokenReadWatchingLogcat(package, progress),
+            };
+            emit(state.copyWith(read: read));
+            if (read is TokenReadFound) {
+              unawaited(_remember(serial, package));
+            }
+          },
+          onDone: () {
+            if (!done.isCompleted) {
+              done.complete();
+            }
+          },
+        );
+    await done.future;
+  }
+
+  Future<void> launchApp(String package) async {
+    final service = _service;
+    final serial = state.serial;
+    if (service == null || serial == null) {
+      return;
+    }
+    try {
+      await service.launchApp(serial, package);
+    } on AdbException catch (e) {
+      if (!isClosed) {
+        emit(state.copyWith(read: TokenReadFailed(package, e.message)));
+      }
+    }
+  }
+
+  /// Back to the package list.
+  void dismiss() => emit(state.copyWith(read: const TokenReadIdle()));
+
+  static String? _preselect(List<FoundToken> tokens, String? projectNumber) {
+    for (final token in tokens) {
+      if (projectNumber != null && token.senderId == projectNumber) {
+        return token.senderId;
+      }
+    }
+    return tokens.length == 1 ? tokens.single.senderId : null;
+  }
+
+  Future<void> _remember(String serial, String package) async {
+    await _recent.remember(serial, package);
+    final recent = await _recent.recent(serial);
+    if (!isClosed && state.serial == serial) {
+      emit(state.copyWith(recent: recent));
+    }
+  }
+
+  Future<void> _cancelLogcat() async {
+    final subscription = _logcat;
+    _logcat = null;
+    await subscription?.cancel();
+    final done = _logcatDone;
+    _logcatDone = null;
+    if (done != null && !done.isCompleted) {
+      done.complete();
+    }
+  }
+
+  @override
+  Future<void> close() async {
+    await _cancelLogcat();
+    return super.close();
+  }
+}
