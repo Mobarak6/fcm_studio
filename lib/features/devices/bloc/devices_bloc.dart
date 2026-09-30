@@ -15,7 +15,11 @@ export 'package:fcm_studio/features/devices/bloc/devices_state.dart';
 class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
   DevicesBloc({required this._serviceFor, this._backoff = defaultBackoff})
     : super(const DevicesState()) {
-    on<DevicesAdbChanged>(_onAdbChanged);
+    // One at a time: a change waits for the previous tracker to be cancelled.
+    on<DevicesAdbChanged>(
+      _onAdbChanged,
+      transformer: (events, mapper) => events.asyncExpand(mapper),
+    );
     on<DeviceSelected>(_onSelected);
     on<_TrackerUpdated>(_onUpdated);
     on<_TrackerEnded>(_onEnded);
@@ -33,6 +37,10 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
   StreamSubscription<List<AdbDevice>>? _subscription;
   Timer? _restartTimer;
   int _failures = 0;
+
+  /// Bumped when a tracker starts and when tracking stops, so events from an
+  /// older tracker are ignored.
+  int _generation = 0;
   final Set<String> _loadingDetails = {};
 
   Future<void> _onAdbChanged(
@@ -40,7 +48,11 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
     Emitter<DevicesState> emit,
   ) async {
     await _stop();
+    if (emit.isDone || isClosed) {
+      return;
+    }
     _failures = 0;
+    _loadingDetails.clear();
     final path = event.adbPath;
     if (path == null) {
       _service = null;
@@ -54,6 +66,7 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
         adbPath: () => path,
         devices: const [],
         retryIn: () => null,
+        lastError: () => null,
       ),
     );
     _listen();
@@ -64,20 +77,21 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
     if (service == null) {
       return;
     }
+    final generation = ++_generation;
     _subscription = service.trackDevices().listen(
       (devices) {
         if (!isClosed) {
-          add(_TrackerUpdated(devices));
+          add(_TrackerUpdated(generation, devices));
         }
       },
       onError: (Object error) {
         if (!isClosed) {
-          add(_TrackerEnded(error));
+          add(_TrackerEnded(generation, error));
         }
       },
       onDone: () {
         if (!isClosed) {
-          add(const _TrackerEnded());
+          add(_TrackerEnded(generation));
         }
       },
       cancelOnError: true,
@@ -85,6 +99,9 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
   }
 
   void _onUpdated(_TrackerUpdated event, Emitter<DevicesState> emit) {
+    if (event.generation != _generation) {
+      return;
+    }
     _failures = 0;
     final devices = event.devices;
     final ready = devices.where((device) => device.isReady).toList();
@@ -149,6 +166,9 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
   }
 
   void _onEnded(_TrackerEnded event, Emitter<DevicesState> emit) {
+    if (event.generation != _generation) {
+      return;
+    }
     _subscription = null;
     if (_service == null) {
       return;
@@ -164,6 +184,7 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
         lastError: () => error == null ? null : _describe(error),
       ),
     );
+    _restartTimer?.cancel();
     _restartTimer = Timer(delay, () {
       if (!isClosed) {
         add(const _TrackerRestart());
@@ -185,6 +206,7 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
   };
 
   Future<void> _stop() async {
+    _generation++;
     _restartTimer?.cancel();
     _restartTimer = null;
     final subscription = _subscription;
@@ -200,14 +222,16 @@ class DevicesBloc extends Bloc<DevicesEvent, DevicesState> {
 }
 
 class _TrackerUpdated extends DevicesEvent {
-  const _TrackerUpdated(this.devices);
+  const _TrackerUpdated(this.generation, this.devices);
 
+  final int generation;
   final List<AdbDevice> devices;
 }
 
 class _TrackerEnded extends DevicesEvent {
-  const _TrackerEnded([this.error]);
+  const _TrackerEnded(this.generation, [this.error]);
 
+  final int generation;
   final Object? error;
 }
 

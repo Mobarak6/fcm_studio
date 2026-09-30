@@ -145,4 +145,48 @@ void main() {
     expect(bloc.state.status, TrackerStatus.noAdb);
     expect(adb.trackers.single.hasListener, isFalse);
   });
+
+  group('adb path changes with a slow cancel', () {
+    const slow = Duration(milliseconds: 20);
+
+    test(
+      'a path then a lost adb ends with no adb and nothing running',
+      () async {
+        adb.trackerCancelDelay = slow;
+        final bloc = build()..add(const DevicesAdbChanged('/a'));
+        await flush();
+        bloc
+          ..add(const DevicesAdbChanged('/b'))
+          ..add(const DevicesAdbChanged(null));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(bloc.state.status, TrackerStatus.noAdb);
+        expect(adb.trackers.where((t) => t.hasListener), isEmpty);
+      },
+    );
+
+    test('two quick path changes leave one tracker on the last path', () async {
+      adb.trackerCancelDelay = slow;
+      final bloc = build()..add(const DevicesAdbChanged('/a'));
+      await flush();
+      bloc
+        ..add(const DevicesAdbChanged('/b'))
+        ..add(const DevicesAdbChanged('/c'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(bloc.state.adbPath, '/c');
+      expect(adb.trackers.where((t) => t.hasListener), hasLength(1));
+      await bloc.close();
+      expect(adb.trackers.where((t) => t.hasListener), isEmpty);
+    });
+
+    test('closing during a path change leaves no tracker running', () async {
+      adb.trackerCancelDelay = slow;
+      final bloc = build()..add(const DevicesAdbChanged('/a'));
+      await flush();
+      bloc.add(const DevicesAdbChanged('/b'));
+      await flush();
+      await bloc.close();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(adb.trackers.where((t) => t.hasListener), isEmpty);
+    });
+  });
 }

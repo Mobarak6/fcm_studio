@@ -18,7 +18,8 @@ class DevicesState extends Equatable {
   final String? adbPath;
   final List<AdbDevice> devices;
 
-  /// Kept while the phone is unplugged, so it is picked up again.
+  /// Kept while the phone is unplugged. If it is not in the next list and
+  /// exactly one other phone is ready, that phone is selected instead.
   final String? selectedSerial;
   final Map<String, DeviceDetails> details;
 

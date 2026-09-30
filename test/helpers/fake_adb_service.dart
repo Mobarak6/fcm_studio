@@ -22,12 +22,21 @@ class FakeAdbService implements AdbService {
   /// When set, readTokenWithRunAs waits for it (to test a read in progress).
   Completer<RunAsResult>? runAsGate;
 
+  /// How long cancelling a tracker takes, like the real service killing adb.
+  Duration trackerCancelDelay = Duration.zero;
+
   StreamController<List<AdbDevice>> get tracker => trackers.last;
 
   @override
   Stream<List<AdbDevice>> trackDevices() {
     calls.add('track-devices');
-    final controller = StreamController<List<AdbDevice>>();
+    final controller = StreamController<List<AdbDevice>>(
+      onCancel: () async {
+        if (trackerCancelDelay != Duration.zero) {
+          await Future<void>.delayed(trackerCancelDelay);
+        }
+      },
+    );
     trackers.add(controller);
     return controller.stream;
   }
