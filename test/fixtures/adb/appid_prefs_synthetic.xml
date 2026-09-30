@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<!-- Written by hand in the format of spec §9.3. Not captured from a phone: the capture was skipped on 2026-10-04. The token is fake. -->
+<map>
+    <string name="|S||P|">REDACTED_LONG_VALUE</string>
+    <string name="|S|id">REDACTED_FID</string>
+    <string name="[DEFAULT]|T|123456789012|*">{&quot;token&quot;:&quot;fakeInstanceId0000000:APA91bFAKE_TOKEN_FOR_TESTS_ONLY_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&quot;,&quot;appVersion&quot;:&quot;1&quot;,&quot;timestamp&quot;:1759550000000}</string>
+    <string name="|S|cre">1759550000</string>
+</map>

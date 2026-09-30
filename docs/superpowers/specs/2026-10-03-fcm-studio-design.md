@@ -40,7 +40,7 @@ These were checked on 2026-10-03:
 - `dart_jsonwebtoken` 3.4.x signs RS256 in pure Dart, so it works on every platform including web.
 - `sembast` 3.8.x is pure Dart. `sembast_web` adds web support through IndexedDB.
 - `flutter_secure_storage` 10.3.x supports macOS, Windows and web.
-- The test device, a Redmi 14C on Android 16, connects over adb. On it, `com.syldel.delivery` is a release build, and `run-as` fails with `package not debuggable`.
+- The test device, a Redmi 14C on Android 16, connects over adb. On it, `com.syldel.delivery` is a release build, and `run-as` fails with `package not debuggable`. On 2026-10-04 a debug build of com.syldel.delivery was installed, so run-as works for it.
 
 ## 3. Architecture
 
@@ -406,14 +406,14 @@ All adb calls go through an injectable **`ProcessRunner`**. Every call has a 10 
 |---|---|---|
 | XML | Parse the file (below) | Show the token(s) |
 | `run-as: package not debuggable: <package>` (seen on the Redmi 14C, Android 16, 2026-10-03) | Release build | Offer Step 2 |
-| `No such file or directory` | No token yet | "Open the app once so it gets a token", with a **Launch app** button, then **Retry** |
-| `Package '<p>' is unknown` | Not installed | Error message |
+| `cat: shared_prefs/com.google.android.gms.appid.xml: No such file or directory` | No token yet | "Open the app once so it gets a token", with a **Launch app** button, then **Retry** |
+| `run-as: unknown package: <package>` (Android 16, seen 2026-10-04; older Android prints `Package '<p>' is unknown`, and both are handled) | Not installed | Error message |
 
 **Parser (`AppIdPrefsParser`, pure Dart):**
 - For each `<string name="…">` whose name matches `^(.*)\|T\|(\d+)\|(.*)$`, group 2 is the **sender ID**.
 - The value is JSON `{"token","appVersion","timestamp"}` in current SDKs. Older SDKs store a raw token; the parser accepts it if it looks like an FCM token.
 - If there are several sender IDs, all of them are listed, and the one matching the current project's number is preselected.
-- *The exact file format must be confirmed against a real debug build in milestone 0. Fixtures from that build go into `test/fixtures/`.*
+- *Not yet confirmed on a device: the capture was skipped on 2026-10-04. The parser follows the format above, and `test/fixtures/adb/appid_prefs_synthetic.xml` is written by hand in that format. The M3 success test on the Redmi confirms it.*
 
 **Step 2: logcat (release builds).**
 
@@ -508,7 +508,7 @@ This step runs only after the user confirms, because it restarts the app.
   - The real service account key check (`dart run tool/check_sa_token.dart <key.json>`).
   - The M1 end-to-end send to the Redmi from the macOS app, including Keychain persistence after a relaunch.
   - The hands-on `re_editor` check in Chrome, and the web reload / "Remember" flow.
-  - The M0 token-file capture (moved to M3).
+  - The M0 token-file capture: skipped on 2026-10-04; the M3 success test checks the format instead.
 
 **M2 status (2026-10-03):**
 - *Done:* the M2 code with its automated tests passing and a clean `flutter analyze`; the macOS debug and web builds succeed.
@@ -525,10 +525,10 @@ This step runs only after the user confirms, because it restarts the app.
   - The real service account key check (`dart run tool/check_sa_token.dart <key.json>`).
   - The M1 end-to-end send to the Redmi from the macOS app, including Keychain persistence after a relaunch.
   - The hands-on `re_editor` check in Chrome, and the web reload / "Remember" flow.
-  - The M0 token-file capture (moved to M3).
+  - The M0 token-file capture: skipped on 2026-10-04; the M3 success test checks the format instead.
 
 ## 14. Open risks
 
-- **Token file format.** The format is inferred from the Firebase SDK's code and has not been seen on a device yet. M0 confirms it, and the parser accepts both known formats.
+- **Token file format.** The format is inferred from the Firebase SDK's code and has not been seen on a device yet. M0 confirms it, and the parser accepts both known formats. The capture was skipped on 2026-10-04, so the M3 success test on the Redmi confirms the format.
 - **Google sign-in in "Testing" mode.** Refresh tokens expire after 7 days, so people sign in again weekly. This is acceptable for an internal tool. Publishing and verifying the app later would remove it.
 - **Unsigned macOS build.** Gatekeeper blocks the first launch, and the user must right-click and choose Open. The README explains this. Notarisation is out of scope.
