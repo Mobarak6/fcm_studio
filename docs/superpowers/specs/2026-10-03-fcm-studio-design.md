@@ -247,7 +247,7 @@ The form is a structured editor for common paths. **Fields it doesn't cover are 
 
 - **Left column:**
   - project switcher;
-  - target picker: Token / Topic / Condition, an autocomplete from saved targets, and **From device…** on desktop;
+  - target picker: Token / Topic / Condition, an autocomplete from saved targets, and **From device…** on desktop (it opens the Devices screen; the only ready phone is selected automatically);
   - preset picker.
 - **Centre:** the Form and JSON tabs.
 - **Right column:**
@@ -384,6 +384,8 @@ Apps launched from Finder don't inherit the shell's `PATH`, which is why the exp
 
 All adb calls go through an injectable **`ProcessRunner`**. Every call has a 10 s timeout, uses `exec-out` where output is binary-sensitive, and decodes output as UTF-8 with `allowMalformed`.
 
+The path is typed in Settings and checked with adb version. "Find automatically" clears it. On the web, the Devices and Settings screens are hidden.
+
 ### 9.2 Devices and packages
 
 - **`DevicesBloc`** runs `adb track-devices -l` as a long-lived process. The output is a sequence of messages, each a 4-hex-digit length followed by that many bytes of payload.
@@ -395,6 +397,7 @@ All adb calls go through an injectable **`ProcessRunner`**. Every call has a 10 
   - `offline`.
 - **Device details:** `ro.product.marketname` (falling back to `ro.product.model`), `ro.product.brand` and `ro.build.version.release`.
 - **Packages:** `pm list packages -3`, sorted, with a search box. The last 5 packages used on that device are listed first.
+- A phone that disappears stays selected, so it is picked up again when it comes back (unless another single ready phone is plugged in meanwhile; that one becomes selected). Unauthorized and offline phones are listed with their hint but can't be opened. The last 5 packages are remembered per phone serial. adb path changes are handled one at a time, and no adb process outlives the screen or a cancelled read.
 
 ### 9.3 Getting the token (`AdbService.readFcmToken(serial, package)`)
 
@@ -428,7 +431,7 @@ This step runs only after the user confirms, because it restarts the app.
 - The step **never runs `logcat -c`**, so other tools such as Android Studio keep their logs.
 - If nothing matches, the message explains that this release build doesn't print its token. The alternatives are a debug build or a debug-only log line.
 
-**Result:** the token, its sender ID, the method (`run-as` or `logcat`) and when it was read. It becomes the composer's target and is saved automatically as a device target (§7.1).
+**Result:** the token, its sender ID, the method (`run-as` or `logcat`) and when it was read. It becomes the composer's target and is saved automatically as a device target (§7.1). A single token is used straight away and the composer is shown again. When the file holds tokens for several sender IDs, the user picks one; the one matching the selected project's number is preselected. The device target is saved under the selected project, with the phone's market name in its label.
 
 ## 10. Storage and security
 
@@ -472,7 +475,7 @@ This step runs only after the user confirms, because it restarts the app.
 - **Cubit/Bloc tests** (plain `test`s that drive the cubit and check its state):
   - composer (rendering, sending, the prod confirmation flow);
   - presets (import conflicts);
-  - `DevicesBloc` with a fake `AdbService` (plug/unplug, restart backoff, run-as → logcat flow).
+  - DevicesBloc with a fake AdbService (plug/unplug, restart backoff), and TokenReaderCubit (the run-as → logcat flow).
 - **Widget tests:**
   - Form ↔ JSON sync, keeping unknown fields;
   - invalid JSON disables Send;
@@ -489,14 +492,14 @@ This step runs only after the user confirms, because it restarts the app.
 
 | # | Milestone | Done when |
 |---|---|---|
-| M0 | **Checks.** Debug-build token file format on the Redmi (fixtures captured); `dart_jsonwebtoken` with a real service account PKCS#8 key; `re_editor` on web. *Already settled on 2026-10-03:* Windows secure-storage size (no limit, see §10). *Moved to the start of M4:* `x-goog-user-project` with a user token, because `gcloud` isn't installed and the check only matters for Google sign-in | Each check is recorded in the spec as confirmed, or as changed with the fallback applied |
+| M0 | **Checks.** Debug-build token file format on the Redmi (capture skipped on 2026-10-04; checked by the M3 success test); `dart_jsonwebtoken` with a real service account PKCS#8 key; `re_editor` on web. *Already settled on 2026-10-03:* Windows secure-storage size (no limit, see §10). *Moved to the start of M4:* `x-goog-user-project` with a user token, because `gcloud` isn't installed and the check only matters for Google sign-in | Each check is recorded in the spec as confirmed, or as changed with the fallback applied |
 | M1 | **Send from a service account.** Scaffold, storage, `SecretStore`, `ServiceAccountTokenProvider`, `FcmClient`, projects (service account), composer JSON tab + preview + Send + result, `FcmErrorExplainer` | A notification sent from the tool arrives on the Redmi |
 | M2 | **Developer experience.** Form tab, presets (built-in, editor, variables, import/export), saved targets, history, dry run, cURL, prod safeguard | The success test works with a pasted token |
 | M3 | **Devices.** `AdbLocator`, `DevicesBloc`, packages, run-as token, logcat fallback, sender-ID check | The success test works fully on the Redmi in under 30 s |
 | M4 | **Google sign-in.** Desktop loopback, web popup, project list import | A teammate adds projects and sends without any key file |
 | M5 | **Release builds.** macOS `.app` zip, Windows zip, static web build, README (setup, OAuth, manual checklist) | A teammate installs it from the README alone |
 
-**M0 token-file capture (2026-10-03):** deferred to the start of M3. It needs a debug build that uses `firebase_messaging` on the Redmi, plus the user running the capture commands, and nothing in M1 depends on it.
+**M0 token-file capture (2026-10-03):** deferred to the start of M3. It needs a debug build that uses `firebase_messaging` on the Redmi, plus the user running the capture commands, and nothing in M1 depends on it. On 2026-10-04 the capture was skipped; a hand-written fixture in the §9.3 format is used instead, and the M3 success test checks the real format.
 
 **M0/M1 status (2026-10-03):**
 - *Done:*
@@ -526,6 +529,21 @@ This step runs only after the user confirms, because it restarts the app.
   - The M1 end-to-end send to the Redmi from the macOS app, including Keychain persistence after a relaunch.
   - The hands-on `re_editor` check in Chrome, and the web reload / "Remember" flow.
   - The M0 token-file capture: skipped on 2026-10-04; the M3 success test checks the format instead.
+
+**M3 status (2026-10-04):**
+- *Done:* the M3 code with its automated tests passing and a clean `flutter analyze`; the macOS debug and web builds succeed. One token read runs at a time; leaving or retrying a read stops its adb process.
+- *Not yet confirmed:* the token file format (§9.3). The capture was skipped, so the parser is tested against a hand-written fixture; the success test below confirms the format.
+- *Manual, pending:*
+  - Start a timer. In the composer, press **From device…**. The Redmi is selected automatically. Tap `com.syldel.delivery`.
+  - Check that FCM Studio is back in the composer with the token as the target.
+  - Pick **Simple notification** and press **Send**.
+  - Stop the timer when the notification appears. **Done when: under 30 seconds.**
+  - Targets shows `Redmi 14C · com.syldel.delivery (debug)`. Read the token again and check that it updates the same saved target.
+  - Unplug the phone: Devices says no phone is connected. Plug it back in: it comes back selected.
+  - Revoke USB debugging authorisations on the phone and plug it in again: Devices shows "Accept the USB debugging prompt on the phone".
+  - In Settings, check the adb path shown. Set a wrong path: it is flagged. Press **Find automatically**.
+  - Optional, if a release build of an app that logs its token is installed: tap it, confirm the restart, and check that the token is found from the log.
+  - adb is found in `%LOCALAPPDATA%\Android\Sdk\platform-tools`, and a phone's token can be read.
 
 ## 14. Open risks
 
