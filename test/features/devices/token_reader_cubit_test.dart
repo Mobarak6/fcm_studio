@@ -188,25 +188,50 @@ void main() {
       expect(adb.calls.where((c) => c.startsWith('logcat')), hasLength(1));
     });
 
-    test('a same-turn readToken and logcat read runs only the first', () async {
-      adb.runAs['b'] = [
-        RunAsTokens([FoundToken(token: fakeDeviceToken, senderId: '1')]),
-      ];
-      final cubit = await opened();
-      final first = cubit.readToken('b');
-      await cubit.readTokenFromLogcat('a');
-      await first;
-      expect(adb.calls.where((c) => c.startsWith('logcat')), isEmpty);
-      expect(cubit.state.read, isA<TokenReadFound>());
-    });
+    test(
+      'a same-turn logcat read and readToken runs only the logcat',
+      () async {
+        final controller = StreamController<LogcatProgress>();
+        addTearDown(controller.close);
+        adb.openLogcat[app] = controller;
+        adb.runAs['b'] = [
+          RunAsTokens([FoundToken(token: fakeDeviceToken, senderId: '1')]),
+        ];
+        final cubit = await opened();
+        final logcat = cubit.readTokenFromLogcat(app);
+        await cubit.readToken('b');
+        await Future<void>.delayed(Duration.zero);
+        expect(adb.calls.where((c) => c.startsWith('run-as')), isEmpty);
+        expect(cubit.state.read, isA<TokenReadWatchingLogcat>());
+        controller.add(const LogcatNoToken());
+        await controller.close();
+        await logcat;
+        expect(cubit.state.read, const TokenReadLogcatNoToken(app));
+      },
+    );
 
     test('dismiss while watching logcat stays idle and completes', () async {
-      adb.logcat[app] = [const LogcatRestartingApp()];
+      final controller = StreamController<LogcatProgress>();
+      addTearDown(controller.close);
+      adb.openLogcat[app] = controller;
       final cubit = await opened();
-      final pending = cubit.readTokenFromLogcat(app);
+      var completed = false;
+      final pending = cubit
+          .readTokenFromLogcat(app)
+          .then((_) => completed = true);
       await Future<void>.delayed(Duration.zero);
+      controller.add(const LogcatWatching(123));
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.state.read, isA<TokenReadWatchingLogcat>());
+      expect(completed, isFalse);
+
       cubit.dismiss();
       await pending;
+      expect(cubit.state.read, const TokenReadIdle());
+      expect(completed, isTrue);
+      expect(controller.hasListener, isFalse);
+
+      controller.add(LogcatFound(fakeDeviceToken));
       await Future<void>.delayed(Duration.zero);
       expect(cubit.state.read, const TokenReadIdle());
     });

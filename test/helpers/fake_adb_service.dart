@@ -16,6 +16,9 @@ class FakeAdbService implements AdbService {
   final Map<String, List<LogcatProgress>> logcat = {};
   final List<String> calls = [];
 
+  /// A logcat stream the test keeps open and feeds itself, by package.
+  final Map<String, StreamController<LogcatProgress>> openLogcat = {};
+
   /// Thrown by listPackages when set.
   Object? packagesError;
 
@@ -83,6 +86,10 @@ class FakeAdbService implements AdbService {
   @override
   Stream<LogcatProgress> readTokenFromLogcat(String serial, String package) {
     calls.add('logcat $serial $package');
+    final open = openLogcat[package];
+    if (open != null) {
+      return open.stream;
+    }
     return Stream.fromIterable(logcat[package] ?? const [LogcatNoToken()]);
   }
 }
