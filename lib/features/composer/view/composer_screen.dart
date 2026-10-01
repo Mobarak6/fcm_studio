@@ -4,6 +4,7 @@ import 'package:fcm_studio/features/composer/view/message_editor_tabs.dart';
 import 'package:fcm_studio/features/composer/view/preview_panel.dart';
 import 'package:fcm_studio/features/composer/view/prod_banner.dart';
 import 'package:fcm_studio/features/composer/view/send_panel.dart';
+import 'package:fcm_studio/features/composer/view/sender_warning.dart';
 import 'package:fcm_studio/features/composer/view/target_picker.dart';
 import 'package:fcm_studio/features/presets/view/preset_actions.dart';
 import 'package:fcm_studio/features/presets/view/preset_picker.dart';
@@ -173,6 +174,7 @@ class _SetupPane extends StatelessWidget {
         ProjectSwitcher(),
         SizedBox(height: 24),
         TargetPicker(),
+        SenderWarning(),
         SizedBox(height: 24),
         PresetPicker(),
       ],
