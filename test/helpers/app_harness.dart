@@ -1,9 +1,11 @@
 import 'package:fcm_studio/app/app.dart';
 import 'package:fcm_studio/app/dependencies.dart';
 import 'package:fcm_studio/core/platform/file_access.dart';
+import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/core/storage/app_database.dart';
 import 'package:fcm_studio/core/storage/secret_store.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
+import 'package:fcm_studio/features/devices/data/process_runner.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:fcm_studio/features/projects/view/project_switcher.dart';
 import 'package:flutter/material.dart';
@@ -11,25 +13,49 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
+import 'fake_adb_service.dart';
 import 'fake_file_access.dart';
 import 'fake_google.dart';
+import 'fake_process_runner.dart';
 import 'fcm_fixtures.dart';
 import 'presets_fixture.dart';
 import 'service_account_fixture.dart';
 
-/// Real async work (sembast, RSA signing, MockClient) runs inside `tester.runAsync`.
+const fakeAdbPath = '/fake/sdk/platform-tools/adb';
+
+/// Real async work (sembast, RSA signing, MockClient) runs inside
+/// `tester.runAsync`. No real program ever runs: without [adb], every
+/// command fails as if adb were not installed.
 Future<AppDependencies> buildTestDependencies(
   WidgetTester tester, {
   http.Client? client,
   FileAccess? files,
+  ProcessRunner? processRunner,
+  Map<String, String>? environment,
+  FakeAdbService? adb,
+  PlatformFeatures platform = const PlatformFeatures(canRunAdb: true),
 }) async {
   final database = await tester.runAsync(AppDatabase.inMemory);
+  final runner = processRunner ?? FakeProcessRunner();
+  if (adb != null && runner is FakeProcessRunner) {
+    runner.on(
+      '$fakeAdbPath version',
+      ok('Android Debug Bridge version 1.0.41\n'),
+    );
+  }
   return AppDependencies(
     httpClient: client ?? fakeGoogle(),
     database: database!,
     secrets: MemorySecretStore(),
     files: files ?? FakeFileAccess(),
     loadBuiltInPresets: loadBuiltInPresetsFromFile,
+    platform: platform,
+    processRunner: runner,
+    environment:
+        environment ??
+        (adb == null ? const {} : const {'ANDROID_HOME': '/fake/sdk'}),
+    isWindows: false,
+    adbServiceFor: adb == null ? null : (_) => adb,
   );
 }
 
@@ -48,7 +74,7 @@ Future<void> pumpApp(WidgetTester tester, AppDependencies dependencies) async {
 
 /// Reads a cubit from the widget tree, through the always-present
 /// ProjectSwitcher (also while another screen is in front).
-T readCubit<T extends Cubit<Object?>>(WidgetTester tester) =>
+T readCubit<T extends BlocBase<Object?>>(WidgetTester tester) =>
     BlocProvider.of<T>(
       tester.element(find.byType(ProjectSwitcher, skipOffstage: false)),
     );
@@ -71,6 +97,8 @@ Future<(ProjectsCubit, ComposerCubit)> pumpAppWithProject(
   String fcmBody = successBody,
   void Function(http.Request request)? onFcmRequest,
   FileAccess? files,
+  FakeAdbService? adb,
+  ProcessRunner? processRunner,
 }) async {
   final dependencies = await buildTestDependencies(
     tester,
@@ -80,6 +108,8 @@ Future<(ProjectsCubit, ComposerCubit)> pumpAppWithProject(
       onFcmRequest: onFcmRequest,
     ),
     files: files,
+    adb: adb,
+    processRunner: processRunner,
   );
   await pumpApp(tester, dependencies);
   final projects = await addTestProject(tester);

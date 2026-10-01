@@ -1,14 +1,21 @@
 import 'package:fcm_studio/core/fcm/fcm_client.dart';
 import 'package:fcm_studio/core/firebase/firebase_projects_api.dart';
 import 'package:fcm_studio/core/platform/file_access.dart';
+import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/core/storage/app_database.dart';
 import 'package:fcm_studio/core/storage/secret_store.dart';
 import 'package:fcm_studio/core/utils/clock.dart';
 import 'package:fcm_studio/features/composer/data/message_sender.dart';
+import 'package:fcm_studio/features/devices/data/adb_locator.dart';
+import 'package:fcm_studio/features/devices/data/adb_service.dart';
+import 'package:fcm_studio/features/devices/data/process_runner.dart';
+import 'package:fcm_studio/features/devices/data/process_runner_platform.dart';
+import 'package:fcm_studio/features/devices/data/recent_packages_repository.dart';
 import 'package:fcm_studio/features/history/data/history_repository.dart';
 import 'package:fcm_studio/features/presets/data/presets_repository.dart';
 import 'package:fcm_studio/features/projects/data/project_auth_registry.dart';
 import 'package:fcm_studio/features/projects/data/projects_repository.dart';
+import 'package:fcm_studio/features/settings/data/settings_repository.dart';
 import 'package:fcm_studio/features/targets/data/targets_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +30,11 @@ class AppDependencies {
     Clock clock = const SystemClock(),
     FileAccess files = const PlatformFileAccess(),
     Future<String> Function()? loadBuiltInPresets,
+    PlatformFeatures platform = PlatformFeatures.current,
+    ProcessRunner? processRunner,
+    Map<String, String>? environment,
+    bool? isWindows,
+    AdbService Function(String adbPath)? adbServiceFor,
   }) {
     final projectsRepository = ProjectsRepository(
       database: database,
@@ -35,11 +47,13 @@ class AppDependencies {
     );
     final historyRepository = HistoryRepository(database: database);
     final targetsRepository = TargetsRepository(database: database);
+    final runner = processRunner ?? createProcessRunner();
     return AppDependencies._(
       httpClient: httpClient,
       database: database,
       clock: clock,
       files: files,
+      platform: platform,
       projectsRepository: projectsRepository,
       authRegistry: authRegistry,
       firebaseProjectsApi: FirebaseProjectsApi(httpClient: httpClient),
@@ -58,6 +72,16 @@ class AppDependencies {
         targets: targetsRepository,
         clock: clock,
       ),
+      settingsRepository: SettingsRepository(database: database),
+      recentPackagesRepository: RecentPackagesRepository(database: database),
+      adbLocator: AdbLocator(
+        runner: runner,
+        environment: environment ?? platformEnvironment(),
+        isWindows: isWindows ?? platformIsWindows(),
+      ),
+      adbServiceFor:
+          adbServiceFor ??
+          (path) => ProcessAdbService(runner: runner, adbPath: path),
     );
   }
 
@@ -66,6 +90,7 @@ class AppDependencies {
     required this.database,
     required this.clock,
     required this.files,
+    required this.platform,
     required this.projectsRepository,
     required this.authRegistry,
     required this.firebaseProjectsApi,
@@ -73,6 +98,10 @@ class AppDependencies {
     required this.historyRepository,
     required this.targetsRepository,
     required this.messageSender,
+    required this.settingsRepository,
+    required this.recentPackagesRepository,
+    required this.adbLocator,
+    required this.adbServiceFor,
   });
 
   static Future<AppDependencies> create() async => AppDependencies(
@@ -89,6 +118,7 @@ class AppDependencies {
   final AppDatabase database;
   final Clock clock;
   final FileAccess files;
+  final PlatformFeatures platform;
   final ProjectsRepository projectsRepository;
   final ProjectAuthRegistry authRegistry;
   final FirebaseProjectsApi firebaseProjectsApi;
@@ -96,4 +126,8 @@ class AppDependencies {
   final HistoryRepository historyRepository;
   final TargetsRepository targetsRepository;
   final MessageSender messageSender;
+  final SettingsRepository settingsRepository;
+  final RecentPackagesRepository recentPackagesRepository;
+  final AdbLocator adbLocator;
+  final AdbService Function(String adbPath) adbServiceFor;
 }

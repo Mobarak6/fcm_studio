@@ -5,10 +5,14 @@ import 'package:fcm_studio/app/navigation_cubit.dart';
 import 'package:fcm_studio/app/shell.dart';
 import 'package:fcm_studio/app/theme.dart';
 import 'package:fcm_studio/core/platform/file_access.dart';
+import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
+import 'package:fcm_studio/features/devices/bloc/devices_bloc.dart';
+import 'package:fcm_studio/features/devices/cubit/token_reader_cubit.dart';
 import 'package:fcm_studio/features/history/cubit/history_cubit.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
+import 'package:fcm_studio/features/settings/cubit/adb_setup_cubit.dart';
 import 'package:fcm_studio/features/targets/cubit/targets_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,8 +29,13 @@ class FcmStudioApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final errors = this.errors;
-    return RepositoryProvider<FileAccess>.value(
-      value: dependencies.files,
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<FileAccess>.value(value: dependencies.files),
+        RepositoryProvider<PlatformFeatures>.value(
+          value: dependencies.platform,
+        ),
+      ],
       child: MultiBlocProvider(
         providers: [
           if (errors != null)
@@ -65,20 +74,51 @@ class FcmStudioApp extends StatelessWidget {
           BlocProvider(
             create: (_) => ComposerCubit(sender: dependencies.messageSender),
           ),
-        ],
-        child: MaterialApp(
-          title: 'FCM Studio',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          // The error banner stays above every screen and dialog.
-          builder: (context, child) => Column(
-            children: [
-              const AppErrorBanner(),
-              Expanded(child: child ?? const SizedBox.shrink()),
-            ],
+          BlocProvider(
+            lazy: false,
+            create: (_) {
+              final cubit = AdbSetupCubit(
+                locator: dependencies.adbLocator,
+                settings: dependencies.settingsRepository,
+              );
+              // Browsers can't run adb (spec §3.1).
+              if (dependencies.platform.canRunAdb) {
+                cubit.locate();
+              }
+              return cubit;
+            },
           ),
-          home: const AppShell(),
+          BlocProvider(
+            lazy: false,
+            create: (_) => DevicesBloc(serviceFor: dependencies.adbServiceFor),
+          ),
+          BlocProvider(
+            create: (_) => TokenReaderCubit(
+              serviceFor: dependencies.adbServiceFor,
+              recent: dependencies.recentPackagesRepository,
+            ),
+          ),
+        ],
+        child: BlocListener<AdbSetupCubit, AdbSetupState>(
+          // Phones are tracked with whichever adb was found, or not at all.
+          listenWhen: (previous, current) =>
+              previous.adbPath != current.adbPath,
+          listener: (context, state) =>
+              context.read<DevicesBloc>().add(DevicesAdbChanged(state.adbPath)),
+          child: MaterialApp(
+            title: 'FCM Studio',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            // The error banner stays above every screen and dialog.
+            builder: (context, child) => Column(
+              children: [
+                const AppErrorBanner(),
+                Expanded(child: child ?? const SizedBox.shrink()),
+              ],
+            ),
+            home: const AppShell(),
+          ),
         ),
       ),
     );
