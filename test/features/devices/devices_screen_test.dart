@@ -1,6 +1,8 @@
 import 'package:fcm_studio/app/navigation_cubit.dart';
 import 'package:fcm_studio/features/composer/domain/target.dart';
 import 'package:fcm_studio/features/composer/view/target_picker.dart';
+import 'package:fcm_studio/features/devices/bloc/devices_bloc.dart';
+import 'package:fcm_studio/features/devices/cubit/token_reader_cubit.dart';
 import 'package:fcm_studio/features/devices/domain/adb_device.dart';
 import 'package:fcm_studio/features/devices/domain/device_token.dart';
 import 'package:fcm_studio/features/devices/domain/token_read_results.dart';
@@ -214,4 +216,47 @@ void main() {
     await settleAsync(tester);
     expect(adb.trackers, hasLength(2));
   });
+
+  testWidgets('a new adb path reopens the reader on the same phone', (
+    tester,
+  ) async {
+    await pumpAppWithProject(tester, adb: adb);
+    await openDevices(tester);
+    await plugIn(tester, const [redmi]);
+    expect(readCubit<TokenReaderCubit>(tester).adbPath, fakeAdbPath);
+    final before = adb.calls.where((c) => c.startsWith('packages')).length;
+
+    readCubit<DevicesBloc>(tester).add(const DevicesAdbChanged('/other/adb'));
+    await settleAsync(tester);
+    adb.trackers.last.add(const [redmi]);
+    await settleAsync(tester);
+
+    expect(readCubit<TokenReaderCubit>(tester).adbPath, '/other/adb');
+    expect(
+      adb.calls.where((c) => c.startsWith('packages')).length,
+      greaterThan(before),
+    );
+  });
+
+  testWidgets(
+    'confirming the log read does nothing if the read moved on meanwhile',
+    (tester) async {
+      adb.runAs[app] = [const RunAsReleaseBuild()];
+      adb.logcat[app] = [LogcatFound(fakeDeviceToken)];
+      final (_, composer) = await pumpAppWithProject(tester, adb: adb);
+      await openDevices(tester);
+      await plugIn(tester, const [redmi]);
+      await tester.tap(find.byKey(const ValueKey('package-$app')));
+      await settleAsync(tester);
+      await tester.tap(find.byKey(TokenReadView.readLogsKey));
+      await tester.pumpAndSettle();
+
+      readCubit<TokenReaderCubit>(tester).dismiss();
+      await tester.tap(find.byKey(TokenReadView.confirmLogsKey));
+      await settleAsync(tester);
+
+      expect(adb.calls.where((c) => c.startsWith('logcat')), isEmpty);
+      expect(composer.state.targetValue, isNot(fakeDeviceToken));
+    },
+  );
 }

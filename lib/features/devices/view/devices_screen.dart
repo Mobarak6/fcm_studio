@@ -43,7 +43,8 @@ class DevicesScreen extends StatelessWidget {
             if (device != null &&
                 device.isReady &&
                 adbPath != null &&
-                reader.state.serial != device.serial) {
+                (reader.state.serial != device.serial ||
+                    reader.adbPath != adbPath)) {
               reader.openDevice(adbPath, device.serial);
             }
           },

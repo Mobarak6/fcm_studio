@@ -18,6 +18,7 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
   final AdbService Function(String adbPath) _serviceFor;
   final RecentPackagesRepository _recent;
   AdbService? _service;
+  String? _adbPath;
   StreamSubscription<LogcatProgress>? _logcat;
   Completer<void>? _logcatDone;
 
@@ -26,7 +27,11 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
   int _generation = 0;
   int _packagesEpoch = 0;
 
+  /// The adb the reader was last opened with.
+  String? get adbPath => _adbPath;
+
   Future<void> openDevice(String adbPath, String serial) async {
+    _adbPath = adbPath;
     _generation++;
     final epoch = ++_packagesEpoch;
     final old = _takeLogcat();

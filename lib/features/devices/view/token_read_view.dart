@@ -188,6 +188,7 @@ class _TokenReadViewState extends State<TokenReadView> {
   /// Logcat restarts the app, so it runs only after the user agrees (spec §9.3).
   Future<void> _confirmLogcat(BuildContext context, String package) async {
     final cubit = context.read<TokenReaderCubit>();
+    final serial = cubit.state.serial;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -209,7 +210,13 @@ class _TokenReadViewState extends State<TokenReadView> {
         ],
       ),
     );
-    if (confirmed ?? false) {
+    // The phone may have changed while the dialog was open.
+    final read = cubit.state.read;
+    final sameAsk =
+        cubit.state.serial == serial &&
+        read is TokenReadReleaseBuild &&
+        read.package == package;
+    if ((confirmed ?? false) && sameAsk) {
       await cubit.readTokenFromLogcat(package);
     }
   }
