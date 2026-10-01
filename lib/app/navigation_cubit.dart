@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// The screens in the navigation rail, in rail order.
-enum AppSection { composer, presets, targets, history }
+/// The app's screens. The rail shows them in [AppShell.sectionsFor] order.
+enum AppSection { composer, presets, targets, history, settings }
 
 class NavigationCubit extends Cubit<AppSection> {
   NavigationCubit() : super(AppSection.composer);
