@@ -1,5 +1,7 @@
 import 'package:fcm_studio/app/app_error_cubit.dart';
+import 'package:fcm_studio/app/navigation_cubit.dart';
 import 'package:fcm_studio/app/widgets/prompt_dialog.dart';
+import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/composer/domain/target.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
@@ -15,6 +17,7 @@ class TargetPicker extends StatefulWidget {
 
   static const fieldKey = Key('target-field');
   static const starKey = Key('save-target');
+  static const fromDeviceKey = Key('target-from-device');
 
   @override
   State<TargetPicker> createState() => _TargetPickerState();
@@ -107,6 +110,14 @@ class _TargetPickerState extends State<TargetPicker> {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
+              if (context.read<PlatformFeatures>().canRunAdb)
+                TextButton.icon(
+                  key: TargetPicker.fromDeviceKey,
+                  onPressed: () =>
+                      context.read<NavigationCubit>().show(AppSection.devices),
+                  icon: const Icon(Icons.phone_android, size: 18),
+                  label: const Text('From device…'),
+                ),
               IconButton(
                 key: TargetPicker.starKey,
                 tooltip: saved == null

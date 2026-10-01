@@ -1,6 +1,7 @@
 import 'package:fcm_studio/app/navigation_cubit.dart';
 import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/features/composer/view/composer_screen.dart';
+import 'package:fcm_studio/features/devices/view/devices_screen.dart';
 import 'package:fcm_studio/features/history/view/history_screen.dart';
 import 'package:fcm_studio/features/presets/view/presets_screen.dart';
 import 'package:fcm_studio/features/settings/view/settings_screen.dart';
@@ -19,6 +20,7 @@ class AppShell extends StatelessWidget {
     AppSection.presets,
     AppSection.targets,
     AppSection.history,
+    if (platform.canRunAdb) AppSection.devices,
     if (platform.canRunAdb) AppSection.settings,
   ];
 
@@ -70,6 +72,11 @@ class AppShell extends StatelessWidget {
           icon: Icon(Icons.history),
           label: Text('History', key: Key('nav-history')),
         ),
+        AppSection.devices => const NavigationRailDestination(
+          icon: Icon(Icons.phone_android_outlined),
+          selectedIcon: Icon(Icons.phone_android),
+          label: Text('Devices', key: Key('nav-devices')),
+        ),
         AppSection.settings => const NavigationRailDestination(
           icon: Icon(Icons.settings_outlined),
           selectedIcon: Icon(Icons.settings),
@@ -82,6 +89,7 @@ class AppShell extends StatelessWidget {
     AppSection.presets => const PresetsScreen(),
     AppSection.targets => const TargetsScreen(),
     AppSection.history => const HistoryScreen(),
+    AppSection.devices => const DevicesScreen(),
     AppSection.settings => const SettingsScreen(),
   };
 }
