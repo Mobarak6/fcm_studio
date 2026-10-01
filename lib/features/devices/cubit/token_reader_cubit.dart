@@ -21,10 +21,21 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
   StreamSubscription<LogcatProgress>? _logcat;
   Completer<void>? _logcatDone;
 
+  /// Bumped by every new read, dismiss and device change, so an answer that
+  /// arrives after the user moved on is dropped.
+  int _generation = 0;
+  int _packagesEpoch = 0;
+
   Future<void> openDevice(String adbPath, String serial) async {
-    await _cancelLogcat();
+    _generation++;
+    final epoch = ++_packagesEpoch;
+    final old = _takeLogcat();
     _service = _serviceFor(adbPath);
     emit(TokenReaderState(serial: serial));
+    await old();
+    if (isClosed || epoch != _packagesEpoch) {
+      return;
+    }
     await refreshPackages();
   }
 
@@ -34,6 +45,7 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
     if (service == null || serial == null) {
       return;
     }
+    final epoch = ++_packagesEpoch;
     emit(
       state.copyWith(
         packagesStatus: PackagesStatus.loading,
@@ -43,7 +55,7 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
     try {
       final installed = await service.listPackages(serial);
       final recent = await _recent.recent(serial);
-      if (isClosed || state.serial != serial) {
+      if (isClosed || state.serial != serial || epoch != _packagesEpoch) {
         return;
       }
       emit(
@@ -54,7 +66,7 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
         ),
       );
     } on AdbException catch (e) {
-      if (isClosed || state.serial != serial) {
+      if (isClosed || state.serial != serial || epoch != _packagesEpoch) {
         return;
       }
       emit(
@@ -75,9 +87,10 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
     if (service == null || serial == null || state.isBusy) {
       return;
     }
+    final generation = ++_generation;
     emit(state.copyWith(read: TokenReading(package)));
     final result = await service.readTokenWithRunAs(serial, package);
-    if (isClosed || state.serial != serial) {
+    if (!_isCurrent(generation, serial)) {
       return;
     }
     final read = switch (result) {
@@ -106,18 +119,25 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
     if (service == null || serial == null || state.isBusy) {
       return;
     }
-    await _cancelLogcat();
+    // Claim the busy state before the first await.
+    final generation = ++_generation;
+    final old = _takeLogcat();
+    final done = _logcatDone = Completer<void>();
     emit(
       state.copyWith(
         read: TokenReadWatchingLogcat(package, const LogcatRestartingApp()),
       ),
     );
-    final done = _logcatDone = Completer<void>();
+    await old();
+    if (!_isCurrent(generation, serial)) {
+      _finish(done);
+      return;
+    }
     _logcat = service
         .readTokenFromLogcat(serial, package)
         .listen(
           (progress) {
-            if (isClosed || state.serial != serial) {
+            if (!_isCurrent(generation, serial)) {
               return;
             }
             final read = switch (progress) {
@@ -138,10 +158,22 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
               unawaited(_remember(serial, package));
             }
           },
-          onDone: () {
-            if (!done.isCompleted) {
-              done.complete();
+          onError: (Object _) {
+            if (_isCurrent(generation, serial)) {
+              emit(
+                state.copyWith(
+                  read: TokenReadFailed(package, 'Reading logcat stopped.'),
+                ),
+              );
             }
+            _finish(done);
+          },
+          onDone: () {
+            if (_isCurrent(generation, serial) &&
+                state.read is TokenReadWatchingLogcat) {
+              emit(state.copyWith(read: TokenReadLogcatNoToken(package)));
+            }
+            _finish(done);
           },
         );
     await done.future;
@@ -150,20 +182,37 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
   Future<void> launchApp(String package) async {
     final service = _service;
     final serial = state.serial;
-    if (service == null || serial == null) {
+    if (service == null || serial == null || state.isBusy) {
       return;
     }
+    final generation = _generation;
     try {
       await service.launchApp(serial, package);
     } on AdbException catch (e) {
-      if (!isClosed) {
+      if (_isCurrent(generation, serial) && !state.isBusy) {
         emit(state.copyWith(read: TokenReadFailed(package, e.message)));
       }
     }
   }
 
   /// Back to the package list.
-  void dismiss() => emit(state.copyWith(read: const TokenReadIdle()));
+  void dismiss() {
+    _generation++;
+    unawaited(_takeLogcat()());
+    emit(state.copyWith(read: const TokenReadIdle()));
+  }
+
+  bool _isCurrent(int generation, String serial) =>
+      !isClosed && generation == _generation && state.serial == serial;
+
+  void _finish(Completer<void> done) {
+    if (!done.isCompleted) {
+      done.complete();
+    }
+    if (identical(_logcatDone, done)) {
+      _logcatDone = null;
+    }
+  }
 
   static String? _preselect(List<FoundToken> tokens, String? projectNumber) {
     for (final token in tokens) {
@@ -174,28 +223,42 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
     return tokens.length == 1 ? tokens.single.senderId : null;
   }
 
+  /// Best-effort: the recent list is a convenience, so errors are dropped.
   Future<void> _remember(String serial, String package) async {
-    await _recent.remember(serial, package);
-    final recent = await _recent.recent(serial);
-    if (!isClosed && state.serial == serial) {
-      emit(state.copyWith(recent: recent));
+    try {
+      await _recent.remember(serial, package);
+      final recent = await _recent.recent(serial);
+      if (!isClosed && state.serial == serial) {
+        emit(state.copyWith(recent: recent));
+      }
+    } on Object {
+      // Ignored on purpose.
     }
   }
 
-  Future<void> _cancelLogcat() async {
+  /// Detaches the running logcat step now; the returned function cancels it
+  /// and completes its waiting future.
+  Future<void> Function() _takeLogcat() {
     final subscription = _logcat;
-    _logcat = null;
-    await subscription?.cancel();
     final done = _logcatDone;
+    _logcat = null;
     _logcatDone = null;
-    if (done != null && !done.isCompleted) {
-      done.complete();
-    }
+    return () async {
+      try {
+        await subscription?.cancel();
+      } finally {
+        if (done != null && !done.isCompleted) {
+          done.complete();
+        }
+      }
+    };
   }
 
   @override
   Future<void> close() async {
-    await _cancelLogcat();
+    _generation++;
+    _packagesEpoch++;
+    await _takeLogcat()();
     return super.close();
   }
 }

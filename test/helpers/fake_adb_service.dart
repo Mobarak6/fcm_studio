@@ -22,6 +22,9 @@ class FakeAdbService implements AdbService {
   /// When set, readTokenWithRunAs waits for it (to test a read in progress).
   Completer<RunAsResult>? runAsGate;
 
+  /// Thrown by launchApp when set.
+  Object? launchError;
+
   /// How long cancelling a tracker takes, like the real service killing adb.
   Duration trackerCancelDelay = Duration.zero;
 
@@ -71,6 +74,10 @@ class FakeAdbService implements AdbService {
   @override
   Future<void> launchApp(String serial, String package) async {
     calls.add('launch $serial $package');
+    final error = launchError;
+    if (error != null) {
+      throw error;
+    }
   }
 
   @override

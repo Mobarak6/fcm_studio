@@ -175,4 +175,93 @@ void main() {
     await first;
     expect(adb.calls.where((c) => c.startsWith('run-as')), hasLength(1));
   });
+
+  group('one read at a time', () {
+    test('two same-turn logcat reads start one logcat', () async {
+      adb.logcat[app] = [const LogcatRestartingApp(), const LogcatWatching(1)];
+      final cubit = await opened();
+      final first = cubit.readTokenFromLogcat(app);
+      final second = cubit.readTokenFromLogcat('com.alpha');
+      await second;
+      await cubit.close();
+      await first;
+      expect(adb.calls.where((c) => c.startsWith('logcat')), hasLength(1));
+    });
+
+    test('a same-turn readToken and logcat read runs only the first', () async {
+      adb.runAs['b'] = [
+        RunAsTokens([FoundToken(token: fakeDeviceToken, senderId: '1')]),
+      ];
+      final cubit = await opened();
+      final first = cubit.readToken('b');
+      await cubit.readTokenFromLogcat('a');
+      await first;
+      expect(adb.calls.where((c) => c.startsWith('logcat')), isEmpty);
+      expect(cubit.state.read, isA<TokenReadFound>());
+    });
+
+    test('dismiss while watching logcat stays idle and completes', () async {
+      adb.logcat[app] = [const LogcatRestartingApp()];
+      final cubit = await opened();
+      final pending = cubit.readTokenFromLogcat(app);
+      await Future<void>.delayed(Duration.zero);
+      cubit.dismiss();
+      await pending;
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.state.read, const TokenReadIdle());
+    });
+
+    test('a run-as result after dismiss does not come back', () async {
+      final gate = Completer<RunAsResult>();
+      adb.runAsGate = gate;
+      final cubit = await opened();
+      final read = cubit.readToken(app);
+      cubit.dismiss();
+      gate.complete(
+        RunAsTokens([FoundToken(token: fakeDeviceToken, senderId: '1')]),
+      );
+      await read;
+      expect(cubit.state.read, const TokenReadIdle());
+    });
+
+    test('a run-as result after A, B, A does not land', () async {
+      final gate = Completer<RunAsResult>();
+      adb.runAsGate = gate;
+      final cubit = await opened();
+      final read = cubit.readToken(app);
+      await cubit.openDevice('/sdk/adb', 'other-serial');
+      await cubit.openDevice('/sdk/adb', redmiSerial);
+      gate.complete(
+        RunAsTokens([FoundToken(token: fakeDeviceToken, senderId: '1')]),
+      );
+      await read;
+      expect(cubit.state.read, const TokenReadIdle());
+    });
+
+    test('a logcat failure shows its message', () async {
+      adb.logcat[app] = [const LogcatFailed('x')];
+      final cubit = await opened();
+      await cubit.readTokenFromLogcat(app);
+      expect(cubit.state.read, const TokenReadFailed(app, 'x'));
+    });
+
+    test('a logcat that ends without a result finds no token', () async {
+      adb.logcat[app] = [const LogcatWatching(1)];
+      final cubit = await opened();
+      await cubit.readTokenFromLogcat(app);
+      expect(cubit.state.read, const TokenReadLogcatNoToken(app));
+    });
+
+    test('a launch failure lands, unless the device changed', () async {
+      adb.launchError = const AdbException('launch failed');
+      final cubit = await opened();
+      await cubit.launchApp(app);
+      expect(cubit.state.read, const TokenReadFailed(app, 'launch failed'));
+      cubit.dismiss();
+      final launch = cubit.launchApp(app);
+      await cubit.openDevice('/sdk/adb', 'other-serial');
+      await launch;
+      expect(cubit.state.read, const TokenReadIdle());
+    });
+  });
 }
