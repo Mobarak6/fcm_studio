@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fcm_studio/core/utils/clock.dart';
 import 'package:fcm_studio/core/utils/ids.dart';
 import 'package:fcm_studio/features/composer/domain/target.dart';
+import 'package:fcm_studio/features/devices/domain/device_token.dart';
 import 'package:fcm_studio/features/targets/cubit/targets_state.dart';
 import 'package:fcm_studio/features/targets/data/targets_repository.dart';
 import 'package:fcm_studio/features/targets/domain/saved_target.dart';
@@ -46,6 +47,40 @@ class TargetsCubit extends Cubit<TargetsState> {
       kind: target.kind,
       value: target.normalized,
       projectId: projectId,
+      lastUsedAt: _clock.now(),
+    );
+    await _repository.save(saved);
+    await load();
+    return saved;
+  }
+
+  /// Saves a token read from a phone (spec §7.1). Keyed by phone and app, so
+  /// reading the same app's token again updates the saved target.
+  Future<SavedTarget> saveDeviceToken(
+    DeviceToken token, {
+    String? projectId,
+  }) async {
+    final existing = (await _repository.loadAll())
+        .where(
+          (t) =>
+              t.source.kind == TargetSourceKind.device &&
+              t.source.serial == token.serial &&
+              t.source.package == token.package,
+        )
+        .firstOrNull;
+    final saved = SavedTarget(
+      id: existing?.id ?? _newId(),
+      label: token.label,
+      kind: TargetKind.token,
+      value: TokenTarget(token.token).normalized,
+      projectId: projectId ?? existing?.projectId,
+      senderId: token.senderId,
+      source: TargetSource(
+        kind: TargetSourceKind.device,
+        serial: token.serial,
+        model: token.deviceName,
+        package: token.package,
+      ),
       lastUsedAt: _clock.now(),
     );
     await _repository.save(saved);

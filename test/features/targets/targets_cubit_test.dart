@@ -1,10 +1,12 @@
 import 'package:fcm_studio/core/storage/app_database.dart';
 import 'package:fcm_studio/features/composer/domain/target.dart';
+import 'package:fcm_studio/features/devices/domain/device_token.dart';
 import 'package:fcm_studio/features/targets/cubit/targets_cubit.dart';
 import 'package:fcm_studio/features/targets/data/targets_repository.dart';
 import 'package:fcm_studio/features/targets/domain/saved_target.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/device_fixtures.dart';
 import '../../helpers/fixed_clock.dart';
 
 void main() {
@@ -71,6 +73,50 @@ void main() {
         ),
       );
       expect((await next).targets.single.id, 'x');
+    },
+  );
+
+  test(
+    'a token read from a phone is saved once per phone and app, then updated',
+    () async {
+      final cubit = await loaded();
+      DeviceToken read(String token) => DeviceToken(
+        token: token,
+        senderId: '123456789012',
+        method: TokenReadMethod.runAs,
+        readAt: clock.now(),
+        serial: redmiSerial,
+        package: 'com.syldel.delivery',
+        deviceName: 'Redmi 14C',
+      );
+
+      final first = await cubit.saveDeviceToken(
+        read(fakeDeviceToken),
+        projectId: 'demo-project',
+      );
+      expect(first.label, 'Redmi 14C · com.syldel.delivery (debug)');
+      expect(first.kind, TargetKind.token);
+      expect(first.value, fakeDeviceToken);
+      expect(first.senderId, '123456789012');
+      expect(first.projectId, 'demo-project');
+      expect(
+        first.source,
+        const TargetSource(
+          kind: TargetSourceKind.device,
+          serial: redmiSerial,
+          model: 'Redmi 14C',
+          package: 'com.syldel.delivery',
+        ),
+      );
+
+      final second = await cubit.saveDeviceToken(read(otherDeviceToken));
+      expect(second.id, first.id);
+      expect(cubit.state.targets.single.value, otherDeviceToken);
+      expect(
+        cubit.state.targets.single.projectId,
+        'demo-project',
+        reason: 'kept when no project is given',
+      );
     },
   );
 }
