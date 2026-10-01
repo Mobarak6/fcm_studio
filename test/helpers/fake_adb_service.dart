@@ -25,6 +25,9 @@ class FakeAdbService implements AdbService {
   /// When set, readTokenWithRunAs waits for it (to test a read in progress).
   Completer<RunAsResult>? runAsGate;
 
+  /// Thrown by readTokenWithRunAs when set.
+  Object? runAsError;
+
   /// Thrown by launchApp when set.
   Object? launchError;
 
@@ -66,6 +69,10 @@ class FakeAdbService implements AdbService {
   @override
   Future<RunAsResult> readTokenWithRunAs(String serial, String package) async {
     calls.add('run-as $serial $package');
+    final error = runAsError;
+    if (error != null) {
+      throw error;
+    }
     final gate = runAsGate;
     if (gate != null) {
       return gate.future;

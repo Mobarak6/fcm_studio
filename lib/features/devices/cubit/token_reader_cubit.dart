@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fcm_studio/core/utils/redact.dart';
 import 'package:fcm_studio/features/devices/cubit/token_reader_state.dart';
 import 'package:fcm_studio/features/devices/data/adb_service.dart';
 import 'package:fcm_studio/features/devices/data/recent_packages_repository.dart';
@@ -80,6 +81,16 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
           packagesError: () => e.message,
         ),
       );
+    } on Object catch (e) {
+      if (isClosed || state.serial != serial || epoch != _packagesEpoch) {
+        return;
+      }
+      emit(
+        state.copyWith(
+          packagesStatus: PackagesStatus.failed,
+          packagesError: () => redact('Listing the apps failed: $e'),
+        ),
+      );
     }
   }
 
@@ -94,7 +105,22 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
     }
     final generation = ++_generation;
     emit(state.copyWith(read: TokenReading(package)));
-    final result = await service.readTokenWithRunAs(serial, package);
+    final RunAsResult result;
+    try {
+      result = await service.readTokenWithRunAs(serial, package);
+    } on Object catch (e) {
+      if (_isCurrent(generation, serial)) {
+        emit(
+          state.copyWith(
+            read: TokenReadFailed(
+              package,
+              redact('Reading the token with run-as failed: $e'),
+            ),
+          ),
+        );
+      }
+      return;
+    }
     if (!_isCurrent(generation, serial)) {
       return;
     }
@@ -196,6 +222,17 @@ class TokenReaderCubit extends Cubit<TokenReaderState> {
     } on AdbException catch (e) {
       if (_isCurrent(generation, serial) && !state.isBusy) {
         emit(state.copyWith(read: TokenReadFailed(package, e.message)));
+      }
+    } on Object catch (e) {
+      if (_isCurrent(generation, serial) && !state.isBusy) {
+        emit(
+          state.copyWith(
+            read: TokenReadFailed(
+              package,
+              redact('Launching the app failed: $e'),
+            ),
+          ),
+        );
       }
     }
   }

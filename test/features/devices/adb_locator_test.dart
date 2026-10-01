@@ -96,4 +96,33 @@ void main() {
       '/usr/local/bin/adb',
     ]);
   });
+
+  test('a typed path loses its quotes and spaces before it is tried', () async {
+    runner.on('/opt/adb version', ok(adbVersion));
+    final search = await locator().locate(userPath: '  "/opt/adb" ');
+    expect(search.found?.path, '/opt/adb');
+    expect(search.tried, ['/opt/adb']);
+  });
+
+  test('a typed path with single quotes loses them too', () async {
+    runner.on('/opt/adb version', ok(adbVersion));
+    final search = await locator().locate(userPath: "'/opt/adb'");
+    expect(search.tried, ['/opt/adb']);
+  });
+
+  test('a leading ~ in a typed path is the home folder', () async {
+    runner.on('/Users/me/sdk/adb version', ok(adbVersion));
+    final search = await locator().locate(userPath: '~/sdk/adb');
+    expect(search.found?.path, '/Users/me/sdk/adb');
+    expect(search.tried, ['/Users/me/sdk/adb']);
+  });
+
+  test('on Windows a leading ~ uses USERPROFILE', () async {
+    runner.on(r'C:\Users\me/sdk/adb.exe version', ok(adbVersion));
+    final search = await locator(
+      environment: const {'USERPROFILE': r'C:\Users\me'},
+      windows: true,
+    ).locate(userPath: '~/sdk/adb.exe');
+    expect(search.tried.first, r'C:\Users\me/sdk/adb.exe');
+  });
 }

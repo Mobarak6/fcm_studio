@@ -231,15 +231,20 @@ class _DevicePanel extends StatelessWidget {
             TokenReadView(read: reader.read),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                key: const Key('devices-search'),
-                decoration: const InputDecoration(
-                  isDense: true,
-                  prefixIcon: Icon(Icons.search),
-                  hintText: 'Search apps',
-                  border: OutlineInputBorder(),
+              // Keyed by phone: switching phones resets the query in the
+              // cubit, so the box must start empty too.
+              child: KeyedSubtree(
+                key: ValueKey(device.serial),
+                child: TextField(
+                  key: const Key('devices-search'),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    prefixIcon: Icon(Icons.search),
+                    hintText: 'Search apps',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: cubit.search,
                 ),
-                onChanged: cubit.search,
               ),
             ),
             const SizedBox(height: 8),

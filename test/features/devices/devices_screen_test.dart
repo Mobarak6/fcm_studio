@@ -259,4 +259,42 @@ void main() {
       expect(composer.state.targetValue, isNot(fakeDeviceToken));
     },
   );
+
+  testWidgets('the search box is empty again after switching phones', (
+    tester,
+  ) async {
+    const second = AdbDevice(
+      serial: 'R58M123ABC',
+      state: DeviceState.device,
+      rawState: 'device',
+      model: 'SM-A135F',
+    );
+    adb.packages['R58M123ABC'] = ['com.beta'];
+    await pumpAppWithProject(tester, adb: adb);
+    await openDevices(tester);
+    await plugIn(tester, const [redmi, second]);
+    await tester.tap(find.byKey(const ValueKey('device-$redmiSerial')));
+    await settleAsync(tester);
+
+    await tester.enterText(find.byKey(const Key('devices-search')), 'alpha');
+    await tester.pump();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('devices-search')))
+          .controller,
+      isNull,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('device-R58M123ABC')));
+    await settleAsync(tester);
+
+    expect(readCubit<TokenReaderCubit>(tester).state.query, isEmpty);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('devices-search')),
+        matching: find.text('alpha'),
+      ),
+      findsNothing,
+    );
+  });
 }

@@ -289,4 +289,26 @@ void main() {
       expect(cubit.state.read, const TokenReadIdle());
     });
   });
+
+  test('an unexpected error ends the read as a failure, not stuck', () async {
+    adb.runAsError = StateError('x');
+    final cubit = await opened();
+    await cubit.readToken(app);
+    expect(cubit.state.read, isA<TokenReadFailed>());
+    expect(cubit.state.isBusy, isFalse);
+  });
+
+  test('an unexpected package list error is shown, not thrown', () async {
+    adb.packagesError = StateError('x');
+    final cubit = await opened();
+    expect(cubit.state.packagesStatus, PackagesStatus.failed);
+    expect(cubit.state.packagesError, isNotNull);
+  });
+
+  test('an unexpected launch error is a failure', () async {
+    adb.launchError = StateError('x');
+    final cubit = await opened();
+    await cubit.launchApp(app);
+    expect(cubit.state.read, isA<TokenReadFailed>());
+  });
 }

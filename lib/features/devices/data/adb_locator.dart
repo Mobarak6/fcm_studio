@@ -99,8 +99,12 @@ class AdbLocator {
     final localAppData = env('LOCALAPPDATA');
     final home = env('HOME');
     return [
-      if (userPath != null && userPath.trim().isNotEmpty)
-        (userPath.trim(), AdbSource.settings),
+      if (_normalizeUserPath(
+            userPath,
+            home: env(_isWindows ? 'USERPROFILE' : 'HOME'),
+          )
+          case final typed?)
+        (typed, AdbSource.settings),
       if (androidHome != null)
         (
           context.join(androidHome, 'platform-tools', adb),
@@ -131,6 +135,22 @@ class AdbLocator {
       if (!_isWindows) ('/opt/homebrew/bin/adb', AdbSource.homebrew),
       if (!_isWindows) ('/usr/local/bin/adb', AdbSource.usrLocal),
     ];
+  }
+
+  /// A typed path as a program path: trimmed, without one pair of surrounding
+  /// quotes (Windows "Copy as path" adds them), with a leading `~` expanded.
+  static String? _normalizeUserPath(String? typed, {required String? home}) {
+    var path = typed?.trim() ?? '';
+    if (path.length >= 2 &&
+        (path.startsWith('"') && path.endsWith('"') ||
+            path.startsWith("'") && path.endsWith("'"))) {
+      path = path.substring(1, path.length - 1).trim();
+    }
+    if (home != null &&
+        (path == '~' || path.startsWith('~/') || path.startsWith('~\\'))) {
+      path = '$home${path.substring(1)}';
+    }
+    return path.isEmpty ? null : path;
   }
 
   Future<String?> _lookUpOnPath() async {

@@ -62,7 +62,31 @@ void main() {
     await tester.tap(find.byKey(SettingsScreen.automaticKey));
     await settleAsync(tester);
     expect(find.text('/opt/homebrew/bin/adb'), findsOneWidget);
-    expect(find.byKey(SettingsScreen.automaticKey), findsNothing);
+    expect(find.text('Find again'), findsOneWidget);
+  });
+
+  testWidgets('Find again searches once more when no path is set', (
+    tester,
+  ) async {
+    final runner = FakeProcessRunner()
+      ..on('/opt/homebrew/bin/adb version', ok(adbVersion));
+    await pumpApp(
+      tester,
+      await buildTestDependencies(tester, processRunner: runner),
+    );
+    await openSettings(tester);
+    final before = runner.commands
+        .where((c) => c == '/opt/homebrew/bin/adb version')
+        .length;
+    expect(find.text('Find again'), findsOneWidget);
+
+    await tester.tap(find.byKey(SettingsScreen.automaticKey));
+    await settleAsync(tester);
+
+    expect(
+      runner.commands.where((c) => c == '/opt/homebrew/bin/adb version'),
+      hasLength(before + 1),
+    );
   });
 
   testWidgets('a typed path that does not run adb is flagged', (tester) async {

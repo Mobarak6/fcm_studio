@@ -1,6 +1,8 @@
 import 'package:fcm_studio/core/utils/redact.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/device_fixtures.dart';
+
 void main() {
   group('redact', () {
     test('removes PEM private keys, including JSON-escaped ones', () {
@@ -27,6 +29,12 @@ void main() {
 
     test('removes bare ya29 access tokens', () {
       expect(redact('got ya29.c.b0Aaek-xyz end'), 'got ya29.[REDACTED] end');
+    });
+
+    test('removes device tokens', () {
+      final out = redact('send to $fakeDeviceToken failed');
+      expect(out, isNot(contains(fakeDeviceToken)));
+      expect(out, 'send to [REDACTED] failed');
     });
 
     test('leaves ordinary text alone', () {

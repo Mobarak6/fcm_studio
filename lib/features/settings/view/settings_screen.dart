@@ -83,13 +83,18 @@ class SettingsScreen extends StatelessWidget {
                     onPressed: () => _change(context),
                     child: const Text('Change…'),
                   ),
-                  if (state.userPath != null)
-                    TextButton(
-                      key: automaticKey,
-                      onPressed: () =>
-                          context.read<AdbSetupCubit>().setUserPath(null),
-                      child: const Text('Find automatically'),
+                  // Always there: the adb found earlier may be gone.
+                  TextButton(
+                    key: automaticKey,
+                    onPressed: () => state.userPath != null
+                        ? context.read<AdbSetupCubit>().setUserPath(null)
+                        : context.read<AdbSetupCubit>().locate(),
+                    child: Text(
+                      state.userPath != null
+                          ? 'Find automatically'
+                          : 'Find again',
                     ),
+                  ),
                 ],
               ),
             ],

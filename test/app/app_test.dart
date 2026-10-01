@@ -1,11 +1,15 @@
+import 'dart:ui' as ui;
+
 import 'package:fcm_studio/app/app_error_banner.dart';
 import 'package:fcm_studio/app/app_error_cubit.dart';
 import 'package:fcm_studio/core/platform/platform_capabilities.dart';
+import 'package:fcm_studio/features/composer/view/target_picker.dart';
 import 'package:fcm_studio/features/devices/bloc/devices_bloc.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
 import 'package:fcm_studio/features/settings/cubit/adb_setup_cubit.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/app_harness.dart';
@@ -103,5 +107,31 @@ void main() {
     );
     expect(readCubit<AdbSetupCubit>(tester).state.status, AdbStatus.unknown);
     expect(runner.calls, isEmpty);
+  });
+
+  testWidgets('quitting the app stops adb track-devices', (tester) async {
+    final adb = FakeAdbService();
+    await pumpApp(tester, await buildTestDependencies(tester, adb: adb));
+    expect(adb.trackers.last.hasListener, isTrue);
+
+    final response = await tester.runAsync(tester.binding.handleRequestAppExit);
+
+    expect(response, ui.AppExitResponse.exit);
+    expect(adb.trackers.last.hasListener, isFalse);
+  });
+
+  testWidgets('on the web there are no device entry points', (tester) async {
+    await pumpApp(
+      tester,
+      await buildTestDependencies(
+        tester,
+        platform: const PlatformFeatures(canRunAdb: false),
+      ),
+    );
+    await addTestProject(tester);
+    // The composer is on screen, so the target picker is built.
+    expect(find.text('Target'), findsOneWidget);
+    expect(find.byKey(const Key('nav-devices')), findsNothing);
+    expect(find.byKey(TargetPicker.fromDeviceKey), findsNothing);
   });
 }

@@ -70,7 +70,8 @@ class TargetsCubit extends Cubit<TargetsState> {
         .firstOrNull;
     final saved = SavedTarget(
       id: existing?.id ?? _newId(),
-      label: token.label,
+      // A name the user typed in Targets survives a re-read.
+      label: existing?.label ?? token.label,
       kind: TargetKind.token,
       value: TokenTarget(token.token).normalized,
       projectId: projectId ?? existing?.projectId,

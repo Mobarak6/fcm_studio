@@ -49,9 +49,50 @@ void main() {
     test('ends when adb exits', () async {
       final tracker = FakeRunningProcess();
       runner.onStart('$adb track-devices -l', () => tracker);
-      final done = service().trackDevices().drain<void>();
+      final done = Completer<void>();
+      service().trackDevices().listen(
+        (_) {},
+        onError: (Object _) {},
+        onDone: done.complete,
+      );
       tracker.exit();
-      await done;
+      await done.future.timeout(const Duration(seconds: 2));
+    });
+
+    test('an adb that exits says so, then the stream is done', () async {
+      final tracker = FakeRunningProcess();
+      runner.onStart('$adb track-devices -l', () => tracker);
+      final errors = <Object>[];
+      final done = Completer<void>();
+      service().trackDevices().listen(
+        (_) {},
+        onError: errors.add,
+        onDone: done.complete,
+      );
+      tracker.exit(1);
+      await done.future.timeout(const Duration(seconds: 2));
+      expect(
+        errors.single,
+        isA<AdbException>().having(
+          (e) => e.message,
+          'message',
+          allOf(contains('track-devices'), contains('1')),
+        ),
+      );
+    });
+
+    test('a cancelled tracker reports no exit error', () async {
+      final tracker = FakeRunningProcess();
+      runner.onStart('$adb track-devices -l', () => tracker);
+      final errors = <Object>[];
+      final subscription = service().trackDevices().listen(
+        (_) {},
+        onError: errors.add,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await subscription.cancel();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(errors, isEmpty);
     });
 
     test(
@@ -344,5 +385,147 @@ void main() {
         );
       },
     );
+
+    test('logcat ending early is a failure naming the exit code', () async {
+      scriptRestart(pidof: <ProcessOutput>[ok('4242\n')]);
+      final logcat = FakeRunningProcess();
+      runner.onStart('$adb -s $redmiSerial logcat --pid=4242', () => logcat);
+      final progress = <LogcatProgress>[];
+      final done = Completer<void>();
+      service().readTokenFromLogcat(redmiSerial, package).listen((p) {
+        progress.add(p);
+        if (p is LogcatWatching) {
+          Future<void>.delayed(
+            const Duration(milliseconds: 5),
+            () => logcat.exit(1),
+          );
+        }
+      }, onDone: done.complete);
+      await done.future.timeout(const Duration(seconds: 2));
+      expect(
+        progress.last,
+        isA<LogcatFailed>().having(
+          (p) => p.message,
+          'message',
+          allOf(contains('logcat'), contains('1')),
+        ),
+      );
+    });
+
+    test('a pidof adb error is a failure, not "not running yet"', () async {
+      scriptRestart(
+        pidof: <ProcessOutput>[
+          const ProcessOutput(exitCode: 1, stderr: 'error: device offline'),
+        ],
+      );
+      final progress = await service()
+          .readTokenFromLogcat(redmiSerial, package)
+          .toList();
+      expect(
+        progress.last,
+        isA<LogcatFailed>().having(
+          (p) => p.message,
+          'message',
+          allOf(contains('pidof'), contains('device offline')),
+        ),
+      );
+    });
+
+    test('pidof exit 1 with no output still means not running yet', () async {
+      scriptRestart(pidof: <ProcessOutput>[const ProcessOutput(exitCode: 1)]);
+      final progress = await service()
+          .readTokenFromLogcat(redmiSerial, package)
+          .toList();
+      expect(progress.last, const LogcatAppDidNotStart());
+    });
+
+    test('cancelling during force-stop never launches the app', () async {
+      final gated = _GatedRunner();
+      gated
+        ..on(shell('am force-stop $package'), ok(''))
+        ..on(
+          shell('monkey -p $package -c android.intent.category.LAUNCHER 1'),
+          ok('Events injected: 1\n'),
+        )
+        ..on(shell('pidof $package'), ok('4242\n'));
+      final svc = ProcessAdbService(
+        runner: gated,
+        adbPath: adb,
+        pollInterval: const Duration(milliseconds: 1),
+      );
+      final restarting = Completer<void>();
+      final subscription = svc.readTokenFromLogcat(redmiSerial, package).listen(
+        (p) {
+          if (p is LogcatRestartingApp) restarting.complete();
+        },
+      );
+      await restarting.future;
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await subscription.cancel();
+      gated.gate.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(gated.commands.where((c) => c.contains('monkey')), isEmpty);
+    });
+
+    test('an unexpected error is LogcatFailed, never a zone error', () async {
+      scriptRestart(pidof: <ProcessOutput>[ok('4242\n')]);
+      final zoneErrors = <Object>[];
+      late List<LogcatProgress> progress;
+      await runZonedGuarded(() async {
+        progress = await ProcessAdbService(
+          runner: _ThrowingStartRunner(runner),
+          adbPath: adb,
+          pollInterval: const Duration(milliseconds: 1),
+        ).readTokenFromLogcat(redmiSerial, package).toList();
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }, (e, _) => zoneErrors.add(e));
+      expect(zoneErrors, isEmpty);
+      expect(
+        progress.last,
+        isA<LogcatFailed>().having(
+          (p) => p.message,
+          'message',
+          contains('logcat'),
+        ),
+      );
+    });
   });
+}
+
+/// Holds `am force-stop` until [gate] completes.
+class _GatedRunner extends FakeProcessRunner {
+  final Completer<void> gate = Completer<void>();
+
+  @override
+  Future<ProcessOutput> run(
+    String executable,
+    List<String> arguments, {
+    Duration timeout = ProcessRunner.defaultTimeout,
+  }) async {
+    final output = await super.run(executable, arguments, timeout: timeout);
+    if (arguments.last.contains('force-stop')) {
+      await gate.future;
+    }
+    return output;
+  }
+}
+
+/// Throws an Error (not a ProcessRunException) when logcat starts.
+class _ThrowingStartRunner implements ProcessRunner {
+  _ThrowingStartRunner(this._inner);
+
+  final FakeProcessRunner _inner;
+
+  @override
+  Future<ProcessOutput> run(
+    String executable,
+    List<String> arguments, {
+    Duration timeout = ProcessRunner.defaultTimeout,
+  }) => _inner.run(executable, arguments, timeout: timeout);
+
+  @override
+  Future<RunningProcess> start(
+    String executable,
+    List<String> arguments,
+  ) async => throw UnsupportedError('no processes here');
 }

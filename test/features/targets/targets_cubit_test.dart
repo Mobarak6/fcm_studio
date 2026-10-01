@@ -119,4 +119,25 @@ void main() {
       );
     },
   );
+
+  test('re-reading a saved phone token keeps a label the user typed', () async {
+    final cubit = await loaded();
+    DeviceToken read(String token) => DeviceToken(
+      token: token,
+      senderId: '123456789012',
+      method: TokenReadMethod.runAs,
+      readAt: clock.now(),
+      serial: redmiSerial,
+      package: 'com.syldel.delivery',
+      deviceName: 'Redmi 14C',
+    );
+    final first = await cubit.saveDeviceToken(read(fakeDeviceToken));
+    await cubit.rename(first, 'My test phone');
+    final second = await cubit.saveDeviceToken(read(otherDeviceToken));
+    expect(second.id, first.id);
+    expect(second.value, otherDeviceToken);
+    expect(second.label, 'My test phone');
+    expect(cubit.state.targets.single.label, 'My test phone');
+    expect(cubit.state.targets.single.value, otherDeviceToken);
+  });
 }

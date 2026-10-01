@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fcm_studio/core/utils/redact.dart';
 import 'package:fcm_studio/features/devices/data/parsers/app_id_prefs_parser.dart';
 import 'package:fcm_studio/features/devices/data/parsers/fcm_token_pattern.dart';
 import 'package:fcm_studio/features/devices/data/parsers/package_list_parser.dart';
@@ -61,6 +62,30 @@ class ProcessAdbService implements AdbService {
     RunningProcess? process;
     StreamSubscription<List<AdbDevice>>? subscription;
     var cancelled = false;
+    var sawError = false;
+
+    // adb exited on its own: say why, then end the stream.
+    Future<void> ended(RunningProcess started) async {
+      if (!cancelled && !sawError) {
+        final code = await started.exitCode
+            .then<int?>((code) => code)
+            .timeout(const Duration(seconds: 1), onTimeout: () => null);
+        if (!cancelled) {
+          final command = describeCommand(_adbPath, const [
+            'track-devices',
+            '-l',
+          ]);
+          controller.addError(
+            AdbException(
+              code == null
+                  ? '`$command` stopped'
+                  : '`$command` exited with code $code',
+            ),
+          );
+        }
+      }
+      await controller.close();
+    }
 
     Future<void> begin() async {
       try {
@@ -74,8 +99,11 @@ class ProcessAdbService implements AdbService {
             .transform(const TrackDevicesDecoder())
             .listen(
               controller.add,
-              onError: controller.addError,
-              onDone: () => unawaited(controller.close()),
+              onError: (Object error, StackTrace stackTrace) {
+                sawError = true;
+                controller.addError(error, stackTrace);
+              },
+              onDone: () => unawaited(ended(started)),
             );
       } on Object catch (e, st) {
         controller.addError(e, st);
@@ -181,6 +209,7 @@ class ProcessAdbService implements AdbService {
       try {
         emit(const LogcatRestartingApp());
         await _shell(serial, 'am force-stop $package');
+        if (cancelled) return;
         await launchApp(serial, package);
         if (cancelled) return;
         emit(const LogcatWaitingForApp());
@@ -194,6 +223,7 @@ class ProcessAdbService implements AdbService {
         final token = await _watchLogcat(
           serial,
           pid,
+          isCancelled: () => cancelled,
           onStarted: (process) {
             logcat = process;
             if (cancelled) process.kill();
@@ -202,6 +232,8 @@ class ProcessAdbService implements AdbService {
         emit(token == null ? const LogcatNoToken() : LogcatFound(token));
       } on AdbException catch (e) {
         emit(LogcatFailed(e.message));
+      } on Object catch (e) {
+        emit(LogcatFailed(redact('Reading the token from logcat failed: $e')));
       } finally {
         await controller.close();
       }
@@ -227,7 +259,13 @@ class ProcessAdbService implements AdbService {
   ) async {
     final stopwatch = Stopwatch()..start();
     while (!isCancelled() && stopwatch.elapsed < _appStartTimeout) {
-      final output = await _run(['-s', serial, 'shell', 'pidof', package]);
+      final arguments = ['-s', serial, 'shell', 'pidof', package];
+      final output = await _run(arguments);
+      if (output.exitCode != 0 &&
+          (output.stderr.trim().isNotEmpty ||
+              output.stdout.trim().startsWith('error:'))) {
+        throw AdbException(_failed(arguments, output));
+      }
       final pid = int.tryParse(
         output.stdout.trim().split(RegExp(r'\s+')).first,
       );
@@ -244,17 +282,40 @@ class ProcessAdbService implements AdbService {
   Future<String?> _watchLogcat(
     String serial,
     int pid, {
+    required bool Function() isCancelled,
     required void Function(RunningProcess process) onStarted,
   }) async {
-    final process = await _start(['-s', serial, 'logcat', '--pid=$pid']);
+    final arguments = ['-s', serial, 'logcat', '--pid=$pid'];
+    final process = await _start(arguments);
     onStarted(process);
     try {
-      return await process.stdout
+      var streamEnded = false;
+      final token = await process.stdout
           .transform(const Utf8Decoder(allowMalformed: true))
           .transform(const LineSplitter())
           .map(FcmTokenPattern.firstIn)
-          .firstWhere((token) => token != null, orElse: () => null)
+          .firstWhere(
+            (token) => token != null,
+            orElse: () {
+              streamEnded = true;
+              return null;
+            },
+          )
           .timeout(_logcatTimeout, onTimeout: () => null);
+      // `logcat --pid` never ends on its own: if it did, adb or the phone
+      // went away. That is a failure, not "no token".
+      if (token == null && streamEnded && !isCancelled()) {
+        final code = await process.exitCode
+            .then<int?>((code) => code)
+            .timeout(const Duration(seconds: 1), onTimeout: () => null);
+        final command = describeCommand(_adbPath, arguments);
+        throw AdbException(
+          code == null
+              ? '`$command` stopped'
+              : '`$command` stopped (exit code $code)',
+        );
+      }
+      return token;
     } finally {
       process.kill();
     }

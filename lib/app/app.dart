@@ -1,3 +1,5 @@
+import 'dart:ui' show AppExitResponse;
+
 import 'package:fcm_studio/app/app_error_banner.dart';
 import 'package:fcm_studio/app/app_error_cubit.dart';
 import 'package:fcm_studio/app/dependencies.dart';
@@ -99,28 +101,74 @@ class FcmStudioApp extends StatelessWidget {
             ),
           ),
         ],
-        child: BlocListener<AdbSetupCubit, AdbSetupState>(
-          // Phones are tracked with whichever adb was found, or not at all.
-          listenWhen: (previous, current) =>
-              previous.adbPath != current.adbPath,
-          listener: (context, state) =>
-              context.read<DevicesBloc>().add(DevicesAdbChanged(state.adbPath)),
-          child: MaterialApp(
-            title: 'FCM Studio',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            // The error banner stays above every screen and dialog.
-            builder: (context, child) => Column(
-              children: [
-                const AppErrorBanner(),
-                Expanded(child: child ?? const SizedBox.shrink()),
-              ],
+        child: _AdbExitGuard(
+          enabled: dependencies.platform.canRunAdb,
+          child: BlocListener<AdbSetupCubit, AdbSetupState>(
+            // Phones are tracked with whichever adb was found, or not at all.
+            listenWhen: (previous, current) =>
+                previous.adbPath != current.adbPath,
+            listener: (context, state) => context.read<DevicesBloc>().add(
+              DevicesAdbChanged(state.adbPath),
             ),
-            home: const AppShell(),
+            child: MaterialApp(
+              title: 'FCM Studio',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              // The error banner stays above every screen and dialog.
+              builder: (context, child) => Column(
+                children: [
+                  const AppErrorBanner(),
+                  Expanded(child: child ?? const SizedBox.shrink()),
+                ],
+              ),
+              home: const AppShell(),
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Closes the adb owners when the app quits. On macOS and Windows quitting
+/// doesn't dispose the widget tree, which would leave `adb track-devices`
+/// (and `adb logcat` during a read) running.
+class _AdbExitGuard extends StatefulWidget {
+  const _AdbExitGuard({required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_AdbExitGuard> createState() => _AdbExitGuardState();
+}
+
+class _AdbExitGuardState extends State<_AdbExitGuard> {
+  AppLifecycleListener? _listener;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.enabled) {
+      _listener = AppLifecycleListener(onExitRequested: _closeAdb);
+    }
+  }
+
+  Future<AppExitResponse> _closeAdb() async {
+    // Read first: nothing may touch the context after an await.
+    final devices = context.read<DevicesBloc>();
+    final reader = context.read<TokenReaderCubit>();
+    await Future.wait([devices.close(), reader.close()]);
+    return AppExitResponse.exit;
+  }
+
+  @override
+  void dispose() {
+    _listener?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
