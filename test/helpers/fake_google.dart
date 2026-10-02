@@ -6,6 +6,13 @@ import 'package:http/testing.dart';
 import 'fcm_fixtures.dart';
 import 'service_account_fixture.dart';
 
+/// What the fake Firebase Management API lists by default.
+const listedTestProject = <String, Object?>{
+  'projectId': testProjectId,
+  'projectNumber': testProjectNumber,
+  'displayName': 'Demo Project',
+};
+
 /// Answers the three Google hosts the app talks to.
 http.Client fakeGoogle({
   int tokenStatus = 200,
@@ -13,6 +20,7 @@ http.Client fakeGoogle({
   int fcmStatus = 200,
   String fcmBody = successBody,
   void Function(http.Request request)? onFcmRequest,
+  List<Map<String, Object?>> firebaseProjects = const [listedTestProject],
 }) {
   return MockClient((request) async {
     switch (request.url.host) {
@@ -34,6 +42,9 @@ http.Client fakeGoogle({
                 tokenStatus,
               );
       case 'firebase.googleapis.com':
+        if (request.url.path == '/v1beta1/projects') {
+          return http.Response(jsonEncode({'results': firebaseProjects}), 200);
+        }
         return firebaseStatus == 200
             ? http.Response(
                 jsonEncode({
