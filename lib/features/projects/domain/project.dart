@@ -5,7 +5,7 @@ const kProjectSchemaVersion = 1;
 
 enum ProjectEnvironment { dev, staging, prod }
 
-/// Which credential a project uses. Google accounts arrive in M4.
+/// Which credential a project uses: a service account key or a Google account (spec §4.2).
 sealed class CredentialRef extends Equatable {
   const CredentialRef();
 
@@ -17,6 +17,7 @@ sealed class CredentialRef extends Equatable {
   static CredentialRef fromJson(Map<String, Object?> json) =>
       switch (json['kind']) {
         'service_account' => ServiceAccountRef(json['clientEmail']! as String),
+        'google_account' => GoogleAccountRef(json['email']! as String),
         final kind => throw FormatException('Unknown credential kind: $kind'),
       };
 }
@@ -37,6 +38,22 @@ final class ServiceAccountRef extends CredentialRef {
 
   @override
   List<Object?> get props => [clientEmail];
+}
+
+final class GoogleAccountRef extends CredentialRef {
+  const GoogleAccountRef(this.email);
+
+  /// Lowercase (plan Decision 13).
+  final String email;
+
+  @override
+  String get secretKey => 'google:$email';
+
+  @override
+  Map<String, Object?> toJson() => {'kind': 'google_account', 'email': email};
+
+  @override
+  List<Object?> get props => [email];
 }
 
 class Project extends Equatable {

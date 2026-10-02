@@ -5,6 +5,7 @@ import 'package:fcm_studio/features/projects/data/projects_repository.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/fake_google_auth_flow.dart';
 import '../../helpers/project_fixture.dart';
 import '../../helpers/service_account_fixture.dart';
 
@@ -111,6 +112,31 @@ void main() {
     expect(
       testProject.copyWith(displayName: testProjectId).label,
       testProjectId,
+    );
+  });
+
+  test('a Google-account project round-trips', () async {
+    await repository.save(testGoogleProject);
+    expect(await repository.loadAll(), [testGoogleProject]);
+  });
+
+  test('stores a Google refresh token under google:<email>', () async {
+    const account = GoogleAccountRef(testGoogleEmail);
+    await repository.saveGoogleRefreshToken(account, '1//r');
+    expect(
+      await secrets.read('google:dev@example.com'),
+      '{"refreshToken":"1//r"}',
+    );
+    expect(await repository.readGoogleRefreshToken(account), '1//r');
+  });
+
+  test('an unreadable stored sign-in reads as missing', () async {
+    await secrets.write('google:dev@example.com', 'not json');
+    expect(
+      await repository.readGoogleRefreshToken(
+        const GoogleAccountRef(testGoogleEmail),
+      ),
+      isNull,
     );
   });
 }

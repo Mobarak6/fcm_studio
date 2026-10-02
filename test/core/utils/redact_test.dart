@@ -37,6 +37,17 @@ void main() {
       expect(out, 'send to [REDACTED] failed');
     });
 
+    test('removes Google refresh tokens, in the stored JSON and bare', () {
+      expect(
+        redact('{"refreshToken":"1//0gAbCdEfGhIjKlMnOpQrStUv"}'),
+        '{"refreshToken":"[REDACTED]"}',
+      );
+      expect(
+        redact('token 1//0gAbCdEfGhIjKlMnOpQrStUvWx failed'),
+        'token 1//[REDACTED] failed',
+      );
+    });
+
     test('leaves ordinary text alone', () {
       expect(
         redact('Requested entity was not found.'),

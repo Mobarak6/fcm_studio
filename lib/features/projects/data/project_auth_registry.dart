@@ -1,9 +1,13 @@
 import 'package:fcm_studio/core/auth/access_token_provider.dart';
+import 'package:fcm_studio/core/auth/google_account_token_provider.dart';
+import 'package:fcm_studio/core/auth/google_auth_flow.dart';
+import 'package:fcm_studio/core/auth/google_user_info.dart';
 import 'package:fcm_studio/core/auth/service_account_key.dart';
 import 'package:fcm_studio/core/auth/service_account_token_provider.dart';
 import 'package:fcm_studio/core/utils/clock.dart';
 import 'package:fcm_studio/features/projects/data/projects_repository.dart';
 import 'package:fcm_studio/features/projects/domain/access_token_resolver.dart';
+import 'package:fcm_studio/features/projects/domain/google_session.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
 import 'package:http/http.dart' as http;
 
@@ -13,12 +17,24 @@ class ProjectAuthRegistry implements AccessTokenResolver {
     required this._repository,
     required http.Client httpClient,
     this._clock = const SystemClock(),
-  }) : _http = httpClient;
+    this._googleFlow,
+    GoogleUserInfo? googleUserInfo,
+  }) : _http = httpClient,
+       _userInfo = googleUserInfo ?? GoogleUserInfoApi(httpClient: httpClient);
+
+  static const _notSetUp =
+      'Google sign-in is not set up in this copy of FCM Studio. '
+      'See docs/oauth-setup.md.';
 
   final ProjectsRepository _repository;
   final http.Client _http;
   final Clock _clock;
+  final GoogleAuthFlow? _googleFlow;
+  final GoogleUserInfo _userInfo;
   final Map<String, AccessTokenProvider> _providers = {};
+
+  /// False when `config/oauth.json` has no client for this platform.
+  bool get canSignInWithGoogle => _googleFlow != null;
 
   /// Creates (or replaces) the provider for [key]'s service account.
   AccessTokenProvider registerKey(ServiceAccountKey key) {
@@ -30,6 +46,40 @@ class ProjectAuthRegistry implements AccessTokenResolver {
     _providers[ServiceAccountRef(key.clientEmail).secretKey] = provider;
     return provider;
   }
+
+  /// Signs in to Google, checks the granted permissions and finds the account
+  /// (plan Decisions 2–3). Nothing is stored or registered yet. Throws
+  /// [GoogleSignInCancelled] or [AuthException].
+  Future<GoogleSession> signInWithGoogle({
+    String? loginHint,
+    Future<void>? cancel,
+  }) async {
+    final flow = _googleFlow;
+    if (flow == null) {
+      throw const AuthException(_notSetUp);
+    }
+    final credentials = await flow.signIn(loginHint: loginHint, cancel: cancel);
+    if (credentials.missingScopes.isNotEmpty) {
+      throw const AuthException(missingScopesMessage);
+    }
+    final email = await _userInfo.emailOf(credentials.accessToken);
+    return GoogleSession(
+      email: email,
+      credentials: credentials,
+      provider: GoogleAccountTokenProvider(
+        email: email,
+        flow: flow,
+        userInfo: _userInfo,
+        refreshToken: credentials.refreshToken,
+        initialToken: credentials.accessToken,
+        clock: _clock,
+      ),
+    );
+  }
+
+  /// From now on, [session]'s provider serves its account.
+  void registerGoogle(GoogleSession session) =>
+      _providers[session.account.secretKey] = session.provider;
 
   void forget(CredentialRef credential) =>
       _providers.remove(credential.secretKey);
@@ -51,6 +101,30 @@ class ProjectAuthRegistry implements AccessTokenResolver {
           );
         }
         return registerKey(key);
+      case GoogleAccountRef(:final email):
+        final flow = _googleFlow;
+        if (flow == null) {
+          throw AuthException(
+            '$_notSetUp Projects that use $email cannot send until then.',
+          );
+        }
+        final refreshToken = flow.canRefresh
+            ? await _repository.readGoogleRefreshToken(credential)
+            : null;
+        if (flow.canRefresh && refreshToken == null) {
+          throw AuthException(
+            GoogleAccountTokenProvider.notStoredMessage(email),
+          );
+        }
+        final provider = GoogleAccountTokenProvider(
+          email: email,
+          flow: flow,
+          userInfo: _userInfo,
+          refreshToken: refreshToken,
+          clock: _clock,
+        );
+        _providers[credential.secretKey] = provider;
+        return provider;
     }
   }
 }

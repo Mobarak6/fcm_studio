@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:fcm_studio/core/auth/service_account_key.dart';
 import 'package:fcm_studio/core/storage/app_database.dart';
 import 'package:fcm_studio/core/storage/secret_store.dart';
@@ -60,6 +62,31 @@ class ProjectsRepository {
     try {
       return ServiceAccountKey.parse(raw);
     } on ServiceAccountKeyException {
+      return null;
+    }
+  }
+
+  /// Desktop only: the browser gets no refresh token (plan Decision 11).
+  Future<void> saveGoogleRefreshToken(
+    GoogleAccountRef account,
+    String refreshToken,
+  ) => _secrets.write(
+    account.secretKey,
+    jsonEncode({'refreshToken': refreshToken}),
+  );
+
+  Future<String?> readGoogleRefreshToken(GoogleAccountRef account) async {
+    final raw = await _secrets.read(account.secretKey);
+    if (raw == null) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      final token = decoded is Map<String, Object?>
+          ? decoded['refreshToken']
+          : null;
+      return token is String && token.isNotEmpty ? token : null;
+    } on FormatException {
       return null;
     }
   }
