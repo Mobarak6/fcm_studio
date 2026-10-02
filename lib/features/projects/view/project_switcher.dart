@@ -1,6 +1,7 @@
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
 import 'package:fcm_studio/features/projects/view/add_project_dialog.dart';
+import 'package:fcm_studio/features/projects/view/sign_in_again_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,7 +23,9 @@ class ProjectSwitcher extends StatelessWidget {
             if (state.status != ProjectsStatus.ready)
               const Text('Loading projects…')
             else if (selected == null)
-              const Text('No projects yet. Add one with a service account key.')
+              const Text(
+                'No projects yet. Add one with a service account key or Google sign-in.',
+              )
             else
               Row(
                 children: [
@@ -89,7 +92,7 @@ class EnvironmentChip extends StatelessWidget {
   }
 }
 
-enum _MenuAction { dev, staging, prod, projectNumber, remove }
+enum _MenuAction { dev, staging, prod, projectNumber, signInAgain, remove }
 
 class _ProjectMenu extends StatelessWidget {
   const _ProjectMenu({required this.project});
@@ -118,6 +121,16 @@ class _ProjectMenu extends StatelessWidget {
                 : 'Project number: ${project.projectNumber}',
           ),
         ),
+        if (project.credential case GoogleAccountRef(:final email)) ...[
+          PopupMenuItem<_MenuAction>(
+            enabled: false,
+            child: Text('Signed in as $email'),
+          ),
+          const PopupMenuItem(
+            value: _MenuAction.signInAgain,
+            child: Text('Sign in again…'),
+          ),
+        ],
         const PopupMenuItem(
           value: _MenuAction.remove,
           child: Text('Remove project…'),
@@ -143,15 +156,39 @@ class _ProjectMenu extends StatelessWidget {
         if (number != null) {
           await cubit.setProjectNumber(project.id, number);
         }
+      case _MenuAction.signInAgain:
+        final credential = project.credential;
+        if (credential is! GoogleAccountRef) {
+          return;
+        }
+        final messenger = ScaffoldMessenger.of(context);
+        final message = await showDialog<String>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => BlocProvider.value(
+            value: cubit,
+            child: SignInAgainDialog(account: credential),
+          ),
+        );
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(message ?? 'Signed in again as ${credential.email}.'),
+          ),
+        );
       case _MenuAction.remove:
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: Text('Remove ${project.id}?'),
-            content: const Text(
-              'The project and its stored key are removed from FCM Studio. '
-              'Nothing changes in Firebase.',
-            ),
+            content: Text(switch (project.credential) {
+              ServiceAccountRef() =>
+                'The project and its stored key are removed from FCM Studio. '
+                    'Nothing changes in Firebase.',
+              GoogleAccountRef(:final email) =>
+                'The project is removed from FCM Studio. The sign-in for $email '
+                    'is forgotten once no other project uses it. Nothing changes '
+                    'in Firebase.',
+            }),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),

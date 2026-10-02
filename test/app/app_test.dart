@@ -24,7 +24,9 @@ void main() {
     await pumpApp(tester, await buildTestDependencies(tester));
 
     expect(
-      find.text('No projects yet. Add one with a service account key.'),
+      find.text(
+        'No projects yet. Add one with a service account key or Google sign-in.',
+      ),
       findsOneWidget,
     );
     await tester.tap(find.text('Add project'));
@@ -90,7 +92,9 @@ void main() {
     expect(readCubit<AdbSetupCubit>(tester).state.status, AdbStatus.notFound);
     expect(readCubit<DevicesBloc>(tester).state.status, TrackerStatus.noAdb);
     expect(
-      find.text('No projects yet. Add one with a service account key.'),
+      find.text(
+        'No projects yet. Add one with a service account key or Google sign-in.',
+      ),
       findsOneWidget,
     );
   });
