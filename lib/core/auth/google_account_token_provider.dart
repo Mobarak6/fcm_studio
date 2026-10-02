@@ -27,6 +27,10 @@ class GoogleAccountTokenProvider implements AccessTokenProvider {
   AccessToken? _cached;
   Future<AccessToken>? _inFlight;
 
+  /// Set after the popup returned another account: the next popup shows the
+  /// account picker instead of taking the browser's current account.
+  bool _pickAccount = false;
+
   /// The stored sign-in no longer works (plan Decision 6).
   static String expiredMessage(String email) =>
       'The Google sign-in for $email has expired or was revoked. '
@@ -76,7 +80,7 @@ class GoogleAccountTokenProvider implements AccessTokenProvider {
     // The browser has no refresh token: ask Google again with a popup.
     final GoogleCredentials credentials;
     try {
-      credentials = await _flow.signIn(loginHint: email);
+      credentials = await _flow.signIn(loginHint: _pickAccount ? null : email);
     } on GoogleSignInCancelled {
       throw AuthException(
         'The Google sign-in for $email was closed. Try again and finish '
@@ -88,11 +92,13 @@ class GoogleAccountTokenProvider implements AccessTokenProvider {
     }
     final signedIn = await _userInfo.emailOf(credentials.accessToken);
     if (signedIn != email) {
+      _pickAccount = true;
       throw AuthException(
         'You signed in as $signedIn, but this project uses $email. '
         'Try again and choose $email.',
       );
     }
+    _pickAccount = false;
     return credentials;
   }
 }

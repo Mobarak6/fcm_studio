@@ -167,10 +167,9 @@ void main() {
         ),
       );
       await provider.getToken();
-      expect(flow.calls, [
-        'signIn $testGoogleEmail',
-        'signIn $testGoogleEmail',
-      ]);
+      // After a wrong account the retry shows the account picker (no hint),
+      // so the user can choose the right one.
+      expect(flow.calls, ['signIn $testGoogleEmail', 'signIn -']);
     },
   );
 

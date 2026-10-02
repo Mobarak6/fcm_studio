@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:fcm_studio/core/auth/access_token_provider.dart';
 
@@ -75,6 +77,35 @@ abstract interface class GoogleAuthFlow {
   /// Gets a new access token with [refreshToken] (desktop only). Throws
   /// [GoogleSignInExpired] when Google no longer accepts it.
   Future<GoogleCredentials> refresh(String refreshToken);
+}
+
+/// Ends [work] with [GoogleSignInCancelled] as soon as [cancel] completes.
+/// A late result or error from [work] is then ignored.
+Future<T> cancellable<T>(Future<T> work, Future<void>? cancel) {
+  if (cancel == null) {
+    return work;
+  }
+  final result = Completer<T>();
+  work.then(
+    (value) {
+      if (!result.isCompleted) {
+        result.complete(value);
+      }
+    },
+    onError: (Object error, StackTrace stackTrace) {
+      if (!result.isCompleted) {
+        result.completeError(error, stackTrace);
+      }
+    },
+  );
+  unawaited(
+    cancel.then((_) {
+      if (!result.isCompleted) {
+        result.completeError(const GoogleSignInCancelled());
+      }
+    }),
+  );
+  return result.future;
 }
 
 /// Turns a Google Identity Services error into what the user should know.

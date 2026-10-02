@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fcm_studio/core/auth/access_token_provider.dart';
 import 'package:fcm_studio/core/auth/google_auth_flow.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,4 +61,29 @@ void main() {
       );
     },
   );
+
+  group('cancellable', () {
+    test('Cancel ends a sign-in that never answers', () async {
+      final popup = Completer<String>();
+      final cancel = Completer<void>();
+      final result = cancellable(popup.future, cancel.future);
+      cancel.complete();
+      await expectLater(result, throwsA(isA<GoogleSignInCancelled>()));
+      // A late answer from the abandoned popup is ignored, not an uncaught error.
+      popup.completeError(const AuthException('late'));
+    });
+
+    test('an answer before Cancel is kept, and errors pass through', () async {
+      final cancel = Completer<void>();
+      expect(await cancellable(Future.value('token'), cancel.future), 'token');
+      await expectLater(
+        cancellable<String>(
+          Future.error(const AuthException('blocked')),
+          cancel.future,
+        ),
+        throwsA(isA<AuthException>()),
+      );
+      expect(await cancellable(Future.value('no cancel'), null), 'no cancel');
+    });
+  });
 }

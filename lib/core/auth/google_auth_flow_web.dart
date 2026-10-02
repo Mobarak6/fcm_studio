@@ -30,11 +30,18 @@ class WebGoogleAuthFlow implements GoogleAuthFlow {
   }) async {
     final gauth.AccessCredentials credentials;
     try {
-      credentials = await gauth.requestAccessCredentials(
-        clientId: clientId,
-        scopes: googleScopes,
-        // With a known account, Google skips the account picker when it can.
-        prompt: loginHint == null ? 'select_account' : '',
+      // Cancel must work even if Google's popup never calls back.
+      credentials = await cancellable(
+        gauth.requestAccessCredentials(
+          clientId: clientId,
+          scopes: googleScopes,
+          // googleapis_auth can't pass a login hint. With a known account the
+          // popup takes the browser's current account without a picker; after
+          // a wrong account the provider asks again without a hint, which
+          // shows the picker.
+          prompt: loginHint == null ? 'select_account' : '',
+        ),
+        cancel,
       );
     } on gauth.AuthenticationException catch (e) {
       throw describeGoogleWebError(e.error, description: e.errorDescription);
