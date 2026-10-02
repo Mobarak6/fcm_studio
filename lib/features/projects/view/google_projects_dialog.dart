@@ -1,3 +1,4 @@
+import 'package:fcm_studio/core/firebase/firebase_projects_api.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +10,7 @@ class GoogleProjectsDialog extends StatefulWidget {
   final GoogleProjectsFound found;
 
   static const addKey = Key('google-projects-add');
+  static const searchKey = Key('google-projects-search');
 
   static Key projectKey(String projectId) =>
       ValueKey('google-project-$projectId');
@@ -19,8 +21,17 @@ class GoogleProjectsDialog extends StatefulWidget {
 
 class _GoogleProjectsDialogState extends State<GoogleProjectsDialog> {
   final Set<String> _picked = {};
+  String _query = '';
   bool _saving = false;
   String? _error;
+
+  /// Matches the display name or the project ID, ignoring case.
+  bool _matches(FirebaseProjectInfo project) {
+    final query = _query.trim().toLowerCase();
+    return query.isEmpty ||
+        project.displayName.toLowerCase().contains(query) ||
+        project.projectId.toLowerCase().contains(query);
+  }
 
   Future<void> _add() async {
     final cubit = context.read<ProjectsCubit>();
@@ -66,6 +77,7 @@ class _GoogleProjectsDialogState extends State<GoogleProjectsDialog> {
     };
     final error = _error;
     final count = _picked.length;
+    final shown = found.projects.where(_matches).toList();
     return AlertDialog(
       title: Text('Projects for ${found.email}'),
       content: SizedBox(
@@ -79,13 +91,28 @@ class _GoogleProjectsDialogState extends State<GoogleProjectsDialog> {
                 '${found.email} has no Firebase projects. Sign in with another '
                 'account, or ask to be added to a project.',
               )
-            else
+            else ...[
+              TextField(
+                key: GoogleProjectsDialog.searchKey,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Search by name or project ID',
+                ),
+                onChanged: (value) => setState(() => _query = value),
+              ),
+              const SizedBox(height: 8),
+              if (shown.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text('No projects match "${_query.trim()}".'),
+                ),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 360),
                 child: ListView(
                   shrinkWrap: true,
                   children: [
-                    for (final project in found.projects)
+                    for (final project in shown)
                       CheckboxListTile(
                         key: GoogleProjectsDialog.projectKey(project.projectId),
                         value: _picked.contains(project.projectId),
@@ -103,6 +130,7 @@ class _GoogleProjectsDialogState extends State<GoogleProjectsDialog> {
                   ],
                 ),
               ),
+            ],
             if (_saving) ...[
               const SizedBox(height: 16),
               const LinearProgressIndicator(),

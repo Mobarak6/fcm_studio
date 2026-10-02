@@ -134,6 +134,66 @@ void main() {
     );
   });
 
+  testWidgets(
+    'search narrows the list by name or project ID, and keeps ticks',
+    (tester) async {
+      await pumpApp(
+        tester,
+        await buildTestDependencies(
+          tester,
+          googleFlow: FakeGoogleAuthFlow(),
+          client: fakeGoogle(
+            firebaseProjects: const [
+              {'projectId': 'jagoo-93f54', 'displayName': 'Jagoo Hub'},
+              {'projectId': 'pharma-e1f88', 'displayName': '800 Pharma'},
+              {'projectId': 'tuek-d087d', 'displayName': '1TUEK-DOMREYTHOM'},
+            ],
+          ),
+        ),
+      );
+      await openAddProject(tester);
+      await tester.tap(find.byKey(AddProjectDialog.googleKey));
+      await settleAsync(tester);
+
+      await tester.enterText(
+        find.byKey(GoogleProjectsDialog.searchKey),
+        'pharma',
+      );
+      await tester.pump();
+      expect(find.text('800 Pharma'), findsOneWidget);
+      expect(find.text('Jagoo Hub'), findsNothing);
+      await tester.tap(
+        find.byKey(GoogleProjectsDialog.projectKey('pharma-e1f88')),
+      );
+      await tester.pump();
+
+      // The project ID matches too, ignoring case.
+      await tester.enterText(
+        find.byKey(GoogleProjectsDialog.searchKey),
+        'JAGOO-93',
+      );
+      await tester.pump();
+      expect(find.text('Jagoo Hub'), findsOneWidget);
+      expect(find.text('800 Pharma'), findsNothing);
+
+      await tester.enterText(
+        find.byKey(GoogleProjectsDialog.searchKey),
+        'nothing',
+      );
+      await tester.pump();
+      expect(find.text('No projects match "nothing".'), findsOneWidget);
+
+      // A ticked project stays ticked while it is filtered out.
+      await tester.enterText(find.byKey(GoogleProjectsDialog.searchKey), '');
+      await tester.pump();
+      expect(find.text('Jagoo Hub'), findsOneWidget);
+      await tester.tap(find.byKey(GoogleProjectsDialog.addKey));
+      await settleAsync(tester);
+      final state = readCubit<ProjectsCubit>(tester).state;
+      expect(state.projects.map((p) => p.id), ['pharma-e1f88']);
+    },
+  );
+
   testWidgets('an account without Firebase projects says so', (tester) async {
     await pumpApp(
       tester,
