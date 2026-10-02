@@ -65,4 +65,146 @@ void main() {
       throwsA(isA<FirebaseApiException>()),
     );
   });
+
+  group('listProjects', () {
+    Map<String, Object?> listed(String id, String name, String number) => {
+      'projectId': id,
+      'displayName': name,
+      'projectNumber': number,
+    };
+
+    test(
+      'follows every page, sorts by name, and sends no quota project',
+      () async {
+        final requests = <http.Request>[];
+        final api = FirebaseProjectsApi(
+          httpClient: MockClient((request) async {
+            requests.add(request);
+            final second = request.url.queryParameters['pageToken'] == 'p2';
+            return http.Response(
+              jsonEncode(
+                second
+                    ? {
+                        'results': [listed('alpha-app', 'Alpha', '111')],
+                      }
+                    : {
+                        'results': [listed('zulu-app', 'Zulu', '999')],
+                        'nextPageToken': 'p2',
+                      },
+              ),
+              200,
+            );
+          }),
+        );
+
+        final projects = await api.listProjects(
+          FakeTokenProvider(
+            headers: {'x-goog-user-project': 'must-not-be-sent'},
+          ),
+        );
+
+        expect(projects.map((p) => p.projectId), ['alpha-app', 'zulu-app']);
+        expect(
+          projects.first,
+          const FirebaseProjectInfo(
+            projectId: 'alpha-app',
+            displayName: 'Alpha',
+            projectNumber: '111',
+          ),
+        );
+        expect(requests, hasLength(2));
+        expect(requests.first.url.path, '/v1beta1/projects');
+        expect(requests.first.url.queryParameters['pageSize'], '100');
+        expect(requests.first.headers['Authorization'], 'Bearer token-1');
+        expect(
+          requests.first.headers.containsKey('x-goog-user-project'),
+          isFalse,
+        );
+      },
+    );
+
+    test('an account without Firebase projects gets an empty list', () async {
+      final api = FirebaseProjectsApi(
+        httpClient: MockClient((_) async => http.Response('{}', 200)),
+      );
+      expect(await api.listProjects(FakeTokenProvider()), isEmpty);
+    });
+
+    test(
+      'a project without a name shows its ID; items without an ID are skipped',
+      () async {
+        final api = FirebaseProjectsApi(
+          httpClient: MockClient(
+            (_) async => http.Response(
+              jsonEncode({
+                'results': [
+                  {'projectId': 'bare-app'},
+                  {'displayName': 'No ID'},
+                ],
+              }),
+              200,
+            ),
+          ),
+        );
+        expect(await api.listProjects(FakeTokenProvider()), [
+          const FirebaseProjectInfo(
+            projectId: 'bare-app',
+            displayName: 'bare-app',
+          ),
+        ]);
+      },
+    );
+
+    test('a disabled Firebase Management API says where to enable it', () async {
+      final api = FirebaseProjectsApi(
+        httpClient: MockClient(
+          (_) async => http.Response(
+            '{"error":{"code":403,"message":"Firebase Management API has not been used '
+            'in project 42 before or it is disabled.","status":"PERMISSION_DENIED",'
+            '"details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo",'
+            '"reason":"SERVICE_DISABLED"}]}}',
+            403,
+          ),
+        ),
+      );
+      await expectLater(
+        api.listProjects(FakeTokenProvider()),
+        throwsA(
+          isA<FirebaseApiException>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('OAuth client'), contains('docs/oauth-setup.md')),
+          ),
+        ),
+      );
+    });
+
+    test('other errors name the HTTP status', () async {
+      final api = FirebaseProjectsApi(
+        httpClient: MockClient((_) async => http.Response('oops', 500)),
+      );
+      await expectLater(
+        api.listProjects(FakeTokenProvider()),
+        throwsA(
+          isA<FirebaseApiException>().having(
+            (e) => e.message,
+            'message',
+            contains('HTTP 500'),
+          ),
+        ),
+      );
+    });
+
+    test('a page token that never ends stops after 50 pages', () async {
+      var calls = 0;
+      final api = FirebaseProjectsApi(
+        httpClient: MockClient((_) async {
+          calls++;
+          return http.Response('{"results":[],"nextPageToken":"again"}', 200);
+        }),
+      );
+      expect(await api.listProjects(FakeTokenProvider()), isEmpty);
+      expect(calls, 50);
+    });
+  });
 }
