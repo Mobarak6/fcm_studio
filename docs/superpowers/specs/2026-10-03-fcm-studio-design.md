@@ -36,7 +36,7 @@ These were checked on 2026-10-03:
 
 - Browsers may call `oauth2.googleapis.com/token`, `fcm.googleapis.com/v1/.../messages:send` and `firebase.googleapis.com/v1beta1/projects` directly. Each one answers the CORS preflight with `Access-Control-Allow-Origin` and allows the headers `authorization`, `content-type` and `x-goog-user-project`. So the web build needs no proxy.
 - `google_sign_in` 7.2.0 supports Android, iOS, macOS and web, but **not Windows**.
-- `googleapis_auth` 2.3.x offers service-account and loopback sign-in only in `auth_io.dart`, which does not run in browsers. For the browser it offers a popup flow in `auth_browser.dart`.
+- `googleapis_auth` 2.3.x offers service-account and loopback sign-in only in `auth_io.dart`, which does not run in browsers. For the browser it offers a popup flow in `auth_browser.dart`. M4 uses `auth_browser.dart` for the web popup; the desktop loopback sign-in is hand-written (see §4.1).
 - `dart_jsonwebtoken` 3.4.x signs RS256 in pure Dart, so it works on every platform including web.
 - `sembast` 3.8.x is pure Dart. `sembast_web` adds web support through IndexedDB.
 - `flutter_secure_storage` 10.3.x supports macOS, Windows and web.
@@ -68,7 +68,8 @@ fcm_studio/
     core/
       auth/                   access_token_provider.dart, service_account_key.dart,
                               service_account_token_provider.dart,
-                              google_account_token_provider.dart (+ _io.dart / _web.dart)
+                              google_auth_flow.dart (+ _io.dart / _web.dart / _platform.dart), google_account_token_provider.dart,
+                              google_user_info.dart, oauth_config.dart
       fcm/                    fcm_client.dart, fcm_send_result.dart, fcm_error_explainer.dart, curl_builder.dart
       firebase/               firebase_projects_api.dart
       storage/                app_database.dart (+ _io.dart / _web.dart), secret_store.dart
@@ -115,9 +116,9 @@ abstract interface class AccessTokenProvider {
   2. Signs it RS256 with `private_key` using `dart_jsonwebtoken`.
   3. POSTs `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer` to the token endpoint.
   4. Adds no extra headers.
-- **`GoogleAccountTokenProvider`**: requests the same two scopes.
-  - *Desktop (`_io`):* `googleapis_auth` `obtainAccessCredentialsViaUserConsent` with a "Desktop app" OAuth client. It opens the system browser and receives the result on a loopback port. The refresh token is kept in `SecretStore`, so the user stays signed in.
-  - *Web (`_web`):* `googleapis_auth` `requestAccessCredentials` (Google's popup flow) with a "Web" OAuth client. There is no refresh token, so when the token expires the popup is shown again, and Google skips the account picker when it can.
+- **`GoogleAccountTokenProvider`**: requests the same two scopes, plus `openid` and `userinfo.email` so the app can read which account signed in. A sign-in that lacks either Firebase scope is refused, and nothing is saved.
+  - *Desktop (`_io`):* a "Desktop app" OAuth client. The app opens the system browser and receives the result on a one-off `127.0.0.1` server (PKCE, a `state` check, `prompt=select_account consent`). Cancel, closing the dialog, or 5 minutes stop the wait and close the port. The code exchange and refreshes are plain POSTs to the token endpoint. The refresh token is kept in `SecretStore`, so the user stays signed in. When Google rejects it (`invalid_grant`: expired or revoked), the user is asked to use **Sign in again…** in the project menu, which must use the same account.
+  - *Web (`_web`):* `googleapis_auth` `requestAccessCredentials` (Google's popup flow) with a "Web" OAuth client. There is no refresh token, so when the token expires the popup is shown again, and Google skips the account picker when it can. Once the account is known the popup uses `prompt: ''`. If the user picks a different account there, the call is refused.
   - `extraHeaders` returns `x-goog-user-project: <projectId>`, so API quota is charged to the target project rather than the OAuth client's project.
 - **Caching:** tokens are kept in memory per credential and refreshed when less than 5 minutes remain. Concurrent requests share one in-flight refresh. After a `401` from FCM, the token is refreshed once and the send is retried once.
 
@@ -140,6 +141,7 @@ Project { id (Firebase project ID), displayName, projectNumber?, environment: de
 1. Sign in.
 2. `GET firebase.googleapis.com/v1beta1/projects`, following pages.
 3. Show a checklist of projects. The ticked ones become `Project`s with their names and numbers filled in.
+4. A ticked project that is already added switches to the Google account and keeps its environment (and its project number when Google has none). If exactly one project is ticked, it is selected.
 
 **Environment:** defaults to `dev`. The user can change it at any time, and the colour is shown in the project switcher.
 
@@ -154,8 +156,8 @@ When the selected project is `prod`:
 ### 4.4 OAuth client configuration
 
 - `config/oauth.json` (git-ignored) holds `desktopClientId`, `desktopClientSecret` and `webClientId`. A desktop app's "client secret" is not confidential by Google's definition, but it still stays out of git.
-- The file is loaded at startup. If it is missing, the Google sign-in button is disabled with a hint that points to the README setup section.
-- The README documents the one-time setup:
+- `config/` is bundled as an asset directory (with the committed `config/oauth.example.json`), so `config/oauth.json` is read at startup when present. The web build serves it publicly, which is fine for client IDs. If it is missing, the Google sign-in button is disabled with a hint that points to the README setup section.
+- `docs/oauth-setup.md` documents the one-time setup (the README links to it). It covers enabling the Firebase Management API in the OAuth client's project, which the project list is billed to, and:
   - create the two OAuth clients;
   - add the web origins (`http://localhost:5050` for development, plus the hosting URL);
   - choose consent screen type "External" + "Testing" and add teammates as test users.
@@ -352,6 +354,8 @@ Turns each failure into a **title, an explanation and a suggested action**. The 
 | `THIRD_PARTY_AUTH_ERROR` (401) | The APNs key/certificate or web push credentials are missing or invalid in Firebase | Link to the project's Cloud Messaging settings |
 | `401 UNAUTHENTICATED` with no FCM code, after the retry | The credential was revoked or the key was deleted | Re-import the key / sign in again |
 | `403 PERMISSION_DENIED`, reason `SERVICE_DISABLED` | The FCM API is not enabled for the project | Link to `console.developers.google.com/apis/api/fcm.googleapis.com/overview?project=<id>` |
+| `403 PERMISSION_DENIED`, reason `USER_PROJECT_DENIED` (Google account) | The account may not bill API quota to the project (`x-goog-user-project`) | Ask for the Service Usage Consumer role, or use a service account key |
+| `403 PERMISSION_DENIED`, reason `ACCESS_TOKEN_SCOPE_INSUFFICIENT` | The Google sign-in did not allow sending | Sign in again and allow every permission |
 | `403 PERMISSION_DENIED` (other) | The account lacks permission | Name the role needed (Firebase Cloud Messaging API Admin) |
 | Network error or timeout | Offline, DNS failure or timeout | Retry |
 
@@ -492,7 +496,7 @@ This step runs only after the user confirms, because it restarts the app.
 
 | # | Milestone | Done when |
 |---|---|---|
-| M0 | **Checks.** Debug-build token file format on the Redmi (capture skipped on 2026-10-04; checked by the M3 success test); `dart_jsonwebtoken` with a real service account PKCS#8 key; `re_editor` on web. *Already settled on 2026-10-03:* Windows secure-storage size (no limit, see §10). *Moved to the start of M4:* `x-goog-user-project` with a user token, because `gcloud` isn't installed and the check only matters for Google sign-in | Each check is recorded in the spec as confirmed, or as changed with the fallback applied |
+| M0 | **Checks.** Debug-build token file format on the Redmi (capture skipped on 2026-10-04; checked by the M3 success test); `dart_jsonwebtoken` with a real service account PKCS#8 key; `re_editor` on web. *Already settled on 2026-10-03:* Windows secure-storage size (no limit, see §10). *Checked by the M4 success test:* `x-goog-user-project` with a user token | Each check is recorded in the spec as confirmed, or as changed with the fallback applied |
 | M1 | **Send from a service account.** Scaffold, storage, `SecretStore`, `ServiceAccountTokenProvider`, `FcmClient`, projects (service account), composer JSON tab + preview + Send + result, `FcmErrorExplainer` | A notification sent from the tool arrives on the Redmi |
 | M2 | **Developer experience.** Form tab, presets (built-in, editor, variables, import/export), saved targets, history, dry run, cURL, prod safeguard | The success test works with a pasted token |
 | M3 | **Devices.** `AdbLocator`, `DevicesBloc`, packages, run-as token, logcat fallback, sender-ID check | The success test works fully on the Redmi in under 30 s |
@@ -545,8 +549,21 @@ This step runs only after the user confirms, because it restarts the app.
   - Optional, if a release build of an app that logs its token is installed: tap it, confirm the restart, and check that the token is found from the log.
   - adb is found in `%LOCALAPPDATA%\Android\Sdk\platform-tools`, and a phone's token can be read.
 
+**M4 status (2026-10-04):**
+- *Done:* the M4 code with its automated tests passing and a clean `flutter analyze`; the macOS debug and web builds succeed. Google sign-in works with fakes in tests; `docs/oauth-setup.md` holds the one-time Google Cloud setup.
+- *Manual, pending:*
+  - Follow `docs/oauth-setup.md` and create `config/oauth.json`.
+  - macOS: **Add project → Sign in with Google…**, allow both permissions, tick the project(s), **Add**, then send **Simple notification** to the Redmi. It must arrive; this also confirms `x-goog-user-project` with a user token.
+  - Quit, relaunch, and send again without signing in (stored refresh token).
+  - Start **Sign in with Google…**, close the browser tab, press **Cancel sign-in**: the dialog returns to normal.
+  - Project menu: **Signed in as …** shows; **Sign in again…** finishes with "Signed in again as …".
+  - Web (`flutter run -d chrome --web-port 5050`): sign in with the pop-up, add a project and send; reload and send again (the pop-up returns, then the send works).
+  - **Done when** a teammate, with no key file, adds a project this way and sends to their phone.
+  - Optional: the same on Windows (`flutter run -d windows`).
+
 ## 14. Open risks
 
 - **Token file format.** The format is inferred from the Firebase SDK's code and has not been seen on a device yet. M0 confirms it, and the parser accepts both known formats. The capture was skipped on 2026-10-04, so the M3 success test on the Redmi confirms the format.
 - **Google sign-in in "Testing" mode.** Refresh tokens expire after 7 days, so people sign in again weekly. This is acceptable for an internal tool. Publishing and verifying the app later would remove it.
 - **Unsigned macOS build.** Gatekeeper blocks the first launch, and the user must right-click and choose Open. The README explains this. Notarisation is out of scope.
+- **Pop-up blockers (web).** Google's popup must open from a click. If the browser blocks it, the app says to allow pop-ups for the site and try again.
