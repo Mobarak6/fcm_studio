@@ -14,3 +14,16 @@ const serviceDisabledBody =
     '{"error":{"code":403,"message":"Firebase Cloud Messaging API has not been used in project '
     '123456789012 before or it is disabled.","status":"PERMISSION_DENIED","details":[{"@type":'
     '"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com"}]}}';
+
+const userProjectDeniedBody =
+    '{"error":{"code":403,"message":"Caller does not have required permission to use '
+    'project demo-project. Grant the caller the roles/serviceusage.serviceUsageConsumer '
+    'role.","status":"PERMISSION_DENIED","details":[{"@type":'
+    '"type.googleapis.com/google.rpc.ErrorInfo","reason":"USER_PROJECT_DENIED",'
+    '"domain":"googleapis.com"}]}}';
+
+const scopeInsufficientBody =
+    '{"error":{"code":403,"message":"Request had insufficient authentication scopes.",'
+    '"status":"PERMISSION_DENIED","details":[{"@type":'
+    '"type.googleapis.com/google.rpc.ErrorInfo","reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT",'
+    '"domain":"googleapis.com"}]}}';

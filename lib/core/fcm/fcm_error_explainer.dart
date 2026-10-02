@@ -22,7 +22,11 @@ class ErrorExplanation extends Equatable {
 class FcmErrorExplainer {
   const FcmErrorExplainer();
 
-  ErrorExplanation explain(FcmError error, {required String projectId}) {
+  ErrorExplanation explain(
+    FcmError error, {
+    required String projectId,
+    bool googleAccount = false,
+  }) {
     switch (error.transport) {
       case FcmTransportError.network:
         return ErrorExplanation(
@@ -42,7 +46,9 @@ class FcmErrorExplainer {
         return ErrorExplanation(
           title: 'Could not get an access token',
           explanation: error.message ?? 'Google did not issue an access token.',
-          action: 'Add the project again with its service account key file.',
+          action: googleAccount
+              ? 'Use "Sign in again…" in the project menu.'
+              : 'Add the project again with its service account key file.',
         );
       case FcmTransportError.unexpected:
         return ErrorExplanation(
@@ -120,6 +126,29 @@ class FcmErrorExplainer {
         );
     }
 
+    if (error.reason == 'USER_PROJECT_DENIED') {
+      return ErrorExplanation(
+        title: "Your account can't use this project's API quota",
+        explanation:
+            'Sends from a Google account are billed to $projectId, and your '
+            'account is not allowed to use it.',
+        action:
+            'Ask an owner of $projectId to give your account the "Service Usage '
+            'Consumer" role, then retry. Or add the project with a service '
+            'account key.',
+        link: Uri.parse(
+          'https://console.cloud.google.com/iam-admin/iam?project=$projectId',
+        ),
+      );
+    }
+    if (error.reason == 'ACCESS_TOKEN_SCOPE_INSUFFICIENT') {
+      return const ErrorExplanation(
+        title: 'FCM Studio is missing a permission',
+        explanation: 'The Google sign-in did not allow sending messages.',
+        action:
+            'Use "Sign in again…" in the project menu and allow every permission.',
+      );
+    }
     if (error.reason == 'SERVICE_DISABLED') {
       return ErrorExplanation(
         title: 'The FCM API is not enabled',
@@ -135,23 +164,34 @@ class FcmErrorExplainer {
     }
 
     if (status == 401) {
-      return const ErrorExplanation(
-        title: 'Access token rejected',
-        explanation:
-            'Google rejected the access token even after getting a fresh one. '
-            'The key may have been deleted or the service account disabled.',
-        action:
-            'Create a new key for the service account and add the project again.',
-      );
+      return googleAccount
+          ? const ErrorExplanation(
+              title: 'Access token rejected',
+              explanation:
+                  'Google rejected the access token even after getting a fresh '
+                  'one. The sign-in may have been revoked.',
+              action: 'Use "Sign in again…" in the project menu.',
+            )
+          : const ErrorExplanation(
+              title: 'Access token rejected',
+              explanation:
+                  'Google rejected the access token even after getting a fresh one. '
+                  'The key may have been deleted or the service account disabled.',
+              action:
+                  'Create a new key for the service account and add the project again.',
+            );
     }
     if (status == 403) {
       return ErrorExplanation(
         title: 'Permission denied',
-        explanation:
-            'This service account is not allowed to send messages for $projectId.',
-        action:
-            'In Google Cloud IAM, give the service account the '
-            '"Firebase Cloud Messaging API Admin" role.',
+        explanation: googleAccount
+            ? 'Your Google account is not allowed to send messages for $projectId.'
+            : 'This service account is not allowed to send messages for $projectId.',
+        action: googleAccount
+            ? 'Ask an owner of $projectId to give your account the "Firebase '
+                  'Cloud Messaging API Admin" role (or Firebase Admin).'
+            : 'In Google Cloud IAM, give the service account the '
+                  '"Firebase Cloud Messaging API Admin" role.',
         link: Uri.parse(
           'https://console.cloud.google.com/iam-admin/iam?project=$projectId',
         ),
@@ -161,7 +201,9 @@ class FcmErrorExplainer {
       return ErrorExplanation(
         title: 'Not found',
         explanation: error.message ?? 'FCM could not find this project.',
-        action: 'Check that the key file belongs to $projectId.',
+        action: googleAccount
+            ? 'Check that $projectId still exists and that your account can see it.'
+            : 'Check that the key file belongs to $projectId.',
       );
     }
     if (status != null && status >= 500) {

@@ -94,6 +94,7 @@ class MessageSender {
       FcmSendFailure(:final error) => _explainer.explain(
         error,
         projectId: project.id,
+        googleAccount: project.credential is GoogleAccountRef,
       ),
       FcmSendSuccess() => null,
     };

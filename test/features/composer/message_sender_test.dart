@@ -148,6 +148,18 @@ void main() {
     );
   });
 
+  test('a Google-account project gets Google sign-in advice', () async {
+    final outcome =
+        await build(
+          auth: FakeResolver(error: const AuthException('expired')),
+        ).send(
+          project: testGoogleProject,
+          request: request,
+          target: const TokenTarget(token),
+        );
+    expect(outcome.explanation?.action, contains('Sign in again'));
+  });
+
   test('dry runs are recorded as dry runs', () async {
     await build().send(
       project: testProject,

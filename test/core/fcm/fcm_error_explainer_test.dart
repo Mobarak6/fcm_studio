@@ -9,6 +9,60 @@ void main() {
   ErrorExplanation explain(FcmError error) =>
       explainer.explain(error, projectId: 'demo-project');
 
+  ErrorExplanation explainGoogle(FcmError error) =>
+      explainer.explain(error, projectId: 'demo-project', googleAccount: true);
+
+  test('USER_PROJECT_DENIED names the Service Usage Consumer role', () {
+    final e = explainGoogle(FcmError.fromResponse(403, userProjectDeniedBody));
+    expect(e.action, contains('Service Usage Consumer'));
+    expect(e.link?.host, 'console.cloud.google.com');
+  });
+
+  test('a missing scope asks to sign in again and allow every permission', () {
+    final e = explainGoogle(FcmError.fromResponse(403, scopeInsufficientBody));
+    expect(
+      e.action,
+      allOf(contains('Sign in again'), contains('every permission')),
+    );
+  });
+
+  test('Google accounts: an auth failure points to Sign in again', () {
+    final e = explainGoogle(
+      const FcmError(transport: FcmTransportError.auth, message: 'expired'),
+    );
+    expect(e.explanation, 'expired');
+    expect(e.action, contains('Sign in again'));
+  });
+
+  test('Google accounts: a 401 points to Sign in again', () {
+    final e = explainGoogle(
+      const FcmError(httpStatus: 401, status: 'UNAUTHENTICATED'),
+    );
+    expect(e.action, contains('Sign in again'));
+  });
+
+  test(
+    'Google accounts: a 403 is about your account, not a service account',
+    () {
+      final e = explainGoogle(
+        const FcmError(httpStatus: 403, status: 'PERMISSION_DENIED'),
+      );
+      expect(e.explanation, contains('Your Google account'));
+      expect(e.action, contains('Firebase Cloud Messaging API Admin'));
+      expect(
+        '${e.explanation} ${e.action}',
+        isNot(contains('service account')),
+      );
+    },
+  );
+
+  test('service accounts keep their advice', () {
+    final e = explain(
+      const FcmError(transport: FcmTransportError.auth, message: 'bad key'),
+    );
+    expect(e.action, contains('service account key file'));
+  });
+
   test('UNREGISTERED: the token is stale', () {
     expect(
       explain(FcmError.fromResponse(404, unregisteredBody)).title,
