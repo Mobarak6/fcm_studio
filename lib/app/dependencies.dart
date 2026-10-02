@@ -1,3 +1,7 @@
+import 'package:fcm_studio/core/auth/google_auth_flow.dart';
+import 'package:fcm_studio/core/auth/google_auth_flow_platform.dart';
+import 'package:fcm_studio/core/auth/google_user_info.dart';
+import 'package:fcm_studio/core/auth/oauth_config.dart';
 import 'package:fcm_studio/core/fcm/fcm_client.dart';
 import 'package:fcm_studio/core/firebase/firebase_projects_api.dart';
 import 'package:fcm_studio/core/platform/file_access.dart';
@@ -35,6 +39,8 @@ class AppDependencies {
     Map<String, String>? environment,
     bool? isWindows,
     AdbService Function(String adbPath)? adbServiceFor,
+    GoogleAuthFlow? googleFlow,
+    GoogleUserInfo? googleUserInfo,
   }) {
     final projectsRepository = ProjectsRepository(
       database: database,
@@ -44,6 +50,8 @@ class AppDependencies {
       repository: projectsRepository,
       httpClient: httpClient,
       clock: clock,
+      googleFlow: googleFlow,
+      googleUserInfo: googleUserInfo,
     );
     final historyRepository = HistoryRepository(database: database);
     final targetsRepository = TargetsRepository(database: database);
@@ -104,15 +112,24 @@ class AppDependencies {
     required this.adbServiceFor,
   });
 
-  static Future<AppDependencies> create() async => AppDependencies(
-    httpClient: http.Client(),
-    database: await AppDatabase.open(),
-    // On web, keys stay in memory unless the user ticks "Remember on this browser".
-    secrets: LayeredSecretStore(
-      persistent: FlutterSecureSecretStore(),
-      alwaysPersist: !kIsWeb,
-    ),
-  );
+  static Future<AppDependencies> create() async {
+    final httpClient = http.Client();
+    // A missing or broken config/oauth.json just leaves Google sign-in off
+    // (spec §4.4).
+    final oauth = await OAuthConfig.load(
+      () => rootBundle.loadString(OAuthConfig.assetPath),
+    );
+    return AppDependencies(
+      httpClient: httpClient,
+      database: await AppDatabase.open(),
+      // On web, keys stay in memory unless the user ticks "Remember on this browser".
+      secrets: LayeredSecretStore(
+        persistent: FlutterSecureSecretStore(),
+        alwaysPersist: !kIsWeb,
+      ),
+      googleFlow: createGoogleAuthFlow(oauth, httpClient),
+    );
+  }
 
   final http.Client httpClient;
   final AppDatabase database;

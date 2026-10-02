@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
+import 'package:fcm_studio/features/projects/view/google_projects_dialog.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +19,9 @@ Future<void> showAddProjectDialog(BuildContext context) {
 class AddProjectDialog extends StatefulWidget {
   const AddProjectDialog({super.key});
 
+  static const googleKey = Key('add-project-google');
+  static const cancelGoogleKey = Key('add-project-google-cancel');
+
   @override
   State<AddProjectDialog> createState() => _AddProjectDialogState();
 }
@@ -25,6 +31,10 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
   bool _busy = false;
   String? _error;
   String? _info;
+
+  /// Set while Google's sign-in is open; completing it stops waiting.
+  Completer<void>? _cancelGoogle;
+  GoogleProjectsFound? _found;
 
   Future<void> _chooseFile() async {
     final file = await openFile(
@@ -74,11 +84,59 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    final cubit = context.read<ProjectsCubit>();
+    final cancel = Completer<void>();
+    setState(() {
+      _cancelGoogle = cancel;
+      _busy = true;
+      _error = null;
+      _info = null;
+    });
+    final result = await cubit.signInWithGoogle(cancel: cancel.future);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _cancelGoogle = null;
+      _busy = false;
+      switch (result) {
+        case GoogleProjectsFound():
+          _found = result;
+        case GoogleSignInFailed(:final message):
+          _error = message;
+        case GoogleSignInStopped():
+          break;
+      }
+    });
+  }
+
+  void _stopGoogle() {
+    final cancel = _cancelGoogle;
+    if (cancel != null && !cancel.isCompleted) {
+      cancel.complete();
+    }
+  }
+
+  @override
+  void dispose() {
+    // Closing the dialog while Google's page is open stops the sign-in, so
+    // the loopback server closes too.
+    _stopGoogle();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final found = _found;
+    if (found != null) {
+      return GoogleProjectsDialog(found: found);
+    }
     final theme = Theme.of(context);
     final error = _error;
     final info = _info;
+    final googleAvailable = context.read<ProjectsCubit>().canSignInWithGoogle;
+    final waitingForGoogle = _cancelGoogle != null;
     return AlertDialog(
       title: const Text('Add project'),
       content: SizedBox(
@@ -112,7 +170,36 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
                 ),
               ),
             ],
-            if (_busy) ...[
+            const Divider(height: 32),
+            const Text(
+              'Or sign in with Google to add the Firebase projects your account '
+              'can see.',
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: AddProjectDialog.googleKey,
+              onPressed: googleAvailable && !_busy ? _signInWithGoogle : null,
+              icon: const Icon(Icons.login),
+              label: const Text('Sign in with Google…'),
+            ),
+            if (!googleAvailable) ...[
+              const SizedBox(height: 4),
+              Text(
+                "Google sign-in isn't set up in this copy of FCM Studio. "
+                'See docs/oauth-setup.md.',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            if (waitingForGoogle) ...[
+              const SizedBox(height: 16),
+              const LinearProgressIndicator(),
+              const SizedBox(height: 8),
+              const Text(
+                kIsWeb
+                    ? 'Finish signing in in the Google pop-up…'
+                    : 'Finish signing in in your browser…',
+              ),
+            ] else if (_busy) ...[
               const SizedBox(height: 16),
               const LinearProgressIndicator(),
             ],
@@ -125,10 +212,17 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.of(context).pop(),
-          child: Text(info == null ? 'Cancel' : 'Done'),
-        ),
+        if (waitingForGoogle)
+          TextButton(
+            key: AddProjectDialog.cancelGoogleKey,
+            onPressed: _stopGoogle,
+            child: const Text('Cancel sign-in'),
+          )
+        else
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.of(context).pop(),
+            child: Text(info == null ? 'Cancel' : 'Done'),
+          ),
         FilledButton(
           onPressed: _busy ? null : _chooseFile,
           child: const Text('Choose key file…'),

@@ -1,5 +1,7 @@
 import 'package:fcm_studio/app/app.dart';
 import 'package:fcm_studio/app/dependencies.dart';
+import 'package:fcm_studio/core/auth/google_auth_flow.dart';
+import 'package:fcm_studio/core/auth/google_user_info.dart';
 import 'package:fcm_studio/core/platform/file_access.dart';
 import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/core/storage/app_database.dart';
@@ -16,6 +18,7 @@ import 'package:http/http.dart' as http;
 import 'fake_adb_service.dart';
 import 'fake_file_access.dart';
 import 'fake_google.dart';
+import 'fake_google_auth_flow.dart';
 import 'fake_process_runner.dart';
 import 'fcm_fixtures.dart';
 import 'presets_fixture.dart';
@@ -34,6 +37,8 @@ Future<AppDependencies> buildTestDependencies(
   Map<String, String>? environment,
   FakeAdbService? adb,
   PlatformFeatures platform = const PlatformFeatures(canRunAdb: true),
+  GoogleAuthFlow? googleFlow,
+  GoogleUserInfo? googleUserInfo,
 }) async {
   final database = await tester.runAsync(AppDatabase.inMemory);
   final runner = processRunner ?? FakeProcessRunner();
@@ -56,6 +61,9 @@ Future<AppDependencies> buildTestDependencies(
         (adb == null ? const {} : const {'ANDROID_HOME': '/fake/sdk'}),
     isWindows: false,
     adbServiceFor: adb == null ? null : (_) => adb,
+    googleFlow: googleFlow,
+    // No test ever asks Google which account signed in.
+    googleUserInfo: googleUserInfo ?? FakeGoogleUserInfo(),
   );
 }
 
@@ -86,6 +94,17 @@ Future<ProjectsCubit> addTestProject(WidgetTester tester) async {
     () =>
         projects.addFromServiceAccount(serviceAccountJson(), persistKey: true),
   );
+  await tester.pump();
+  return projects;
+}
+
+/// Signs in with the fake Google flow and adds every listed project.
+Future<ProjectsCubit> addGoogleTestProject(WidgetTester tester) async {
+  final projects = readCubit<ProjectsCubit>(tester);
+  await tester.runAsync(() async {
+    final found = await projects.signInWithGoogle() as GoogleProjectsFound;
+    await projects.addGoogleProjects(found.session, found.projects);
+  });
   await tester.pump();
   return projects;
 }
