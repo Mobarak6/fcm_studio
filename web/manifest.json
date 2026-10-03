@@ -1,11 +1,11 @@
 {
-    "name": "fcm_studio",
-    "short_name": "fcm_studio",
+    "name": "FCM Studio",
+    "short_name": "FCM Studio",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0B1433",
+    "theme_color": "#1F8AFD",
+    "description": "Send Firebase Cloud Messaging pushes while you build your app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

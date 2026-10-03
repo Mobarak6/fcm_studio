@@ -90,7 +90,7 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "dev.fcmstudio" "\0"
-            VALUE "FileDescription", "fcm_studio" "\0"
+            VALUE "FileDescription", "FCM Studio" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "fcm_studio" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 dev.fcmstudio. All rights reserved." "\0"

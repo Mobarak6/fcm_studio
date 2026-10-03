@@ -14,6 +14,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class AppShell extends StatelessWidget {
   const AppShell({super.key});
 
+  static const logoAsset = 'assets/branding/mark.png';
+  static const logoKey = Key('app-logo');
+
   /// The rail's sections, in order. The adb screens need a desktop (spec §3.1).
   static List<AppSection> sectionsFor(PlatformFeatures platform) => [
     AppSection.composer,
@@ -35,6 +38,19 @@ class AppShell extends StatelessWidget {
           NavigationRail(
             selectedIndex: index,
             labelType: NavigationRailLabelType.all,
+            leading: const Padding(
+              padding: EdgeInsets.only(top: 4, bottom: 12),
+              child: Tooltip(
+                message: 'FCM Studio',
+                child: Image(
+                  key: logoKey,
+                  image: AssetImage(logoAsset),
+                  width: 40,
+                  height: 40,
+                  filterQuality: FilterQuality.medium,
+                ),
+              ),
+            ),
             onDestinationSelected: (i) =>
                 context.read<NavigationCubit>().show(sections[i]),
             destinations: [for (final s in sections) _destination(s)],

@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:fcm_studio/app/app_error_banner.dart';
 import 'package:fcm_studio/app/app_error_cubit.dart';
+import 'package:fcm_studio/app/shell.dart';
 import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/features/composer/view/target_picker.dart';
 import 'package:fcm_studio/features/devices/bloc/devices_bloc.dart';
@@ -32,6 +33,13 @@ void main() {
     await tester.tap(find.text('Add project'));
     await tester.pumpAndSettle();
     expect(find.text('Choose key file…'), findsOneWidget);
+  });
+
+  testWidgets('the rail shows the FCM Studio logo', (tester) async {
+    await pumpApp(tester, await buildTestDependencies(tester));
+    final logo = tester.widget<Image>(find.byKey(AppShell.logoKey));
+    expect(logo.image, const AssetImage(AppShell.logoAsset));
+    expect(find.byTooltip('FCM Studio'), findsOneWidget);
   });
 
   testWidgets('shows an added project and its environment', (tester) async {
