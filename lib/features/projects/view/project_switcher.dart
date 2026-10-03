@@ -9,6 +9,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ProjectSwitcher extends StatelessWidget {
   const ProjectSwitcher({super.key});
 
+  static const dropdownKey = Key('project-dropdown');
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -30,25 +32,9 @@ class ProjectSwitcher extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButton<String>(
-                      key: const Key('project-dropdown'),
-                      isExpanded: true,
-                      value: selected.id,
-                      items: [
-                        for (final project in state.projects)
-                          DropdownMenuItem(
-                            value: project.id,
-                            child: Text(
-                              project.label,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                      ],
-                      onChanged: (id) {
-                        if (id != null) {
-                          context.read<ProjectsCubit>().select(id);
-                        }
-                      },
+                    child: _ProjectPicker(
+                      projects: state.projects,
+                      selected: selected,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -64,6 +50,86 @@ class ProjectSwitcher extends StatelessWidget {
             ),
           ],
         );
+      },
+    );
+  }
+}
+
+/// The project dropdown. Typing filters it by name or project ID (the label
+/// is "Name (id)"); leaving it without choosing shows the selected project
+/// again.
+class _ProjectPicker extends StatefulWidget {
+  const _ProjectPicker({required this.projects, required this.selected});
+
+  final List<Project> projects;
+  final Project selected;
+
+  @override
+  State<_ProjectPicker> createState() => _ProjectPickerState();
+}
+
+class _ProjectPickerState extends State<_ProjectPicker> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.selected.label,
+  );
+  final FocusNode _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_showSelectedWhenLeft);
+  }
+
+  @override
+  void didUpdateWidget(_ProjectPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // e.g. the project was switched elsewhere, or renamed.
+    if (!_focus.hasFocus) {
+      _showSelected();
+    }
+  }
+
+  void _showSelectedWhenLeft() {
+    if (!_focus.hasFocus) {
+      _showSelected();
+    }
+  }
+
+  void _showSelected() {
+    final label = widget.selected.label;
+    if (_controller.text != label) {
+      _controller.text = label;
+    }
+  }
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownMenu<String>(
+      key: ProjectSwitcher.dropdownKey,
+      controller: _controller,
+      focusNode: _focus,
+      initialSelection: widget.selected.id,
+      expandedInsets: EdgeInsets.zero,
+      enableFilter: true,
+      requestFocusOnTap: true,
+      menuHeight: 360,
+      leadingIcon: const Icon(Icons.search),
+      hintText: 'Search projects',
+      dropdownMenuEntries: [
+        for (final project in widget.projects)
+          DropdownMenuEntry(value: project.id, label: project.label),
+      ],
+      onSelected: (id) {
+        if (id != null) {
+          context.read<ProjectsCubit>().select(id);
+        }
       },
     );
   }
