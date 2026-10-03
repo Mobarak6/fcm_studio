@@ -113,12 +113,14 @@ void main() {
     final presets = PresetCodec.decode(
       File('assets/presets/builtin.json').readAsStringSync(),
     );
-    expect(presets.map((p) => p.name), [
+    // The generic four come first; the 6amMart ones have their own test.
+    expect(presets.take(4).map((p) => p.name), [
       'Simple notification',
       'Notification with image',
       'Notification + data',
       'Data only (silent / background)',
     ]);
+    expect(presets, hasLength(27));
     for (final p in presets) {
       final result = const MessageRenderer().render(
         template: p.template,

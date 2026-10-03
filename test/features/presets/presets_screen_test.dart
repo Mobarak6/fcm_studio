@@ -52,6 +52,15 @@ void main() {
     expect(find.text('Mine'), findsOneWidget);
   });
 
+  testWidgets('my presets come before the long built-in list', (tester) async {
+    final (_, presets, _) = await openPresets(tester);
+    await saveMine(tester, presets, 'Mine');
+    double top(String text) => tester.getTopLeft(find.text(text)).dy;
+    expect(top('My presets'), lessThan(top('Mine')));
+    expect(top('Mine'), lessThan(top('Built-in')));
+    expect(top('Built-in'), lessThan(top('Simple notification')));
+  });
+
   testWidgets('Open in composer loads the preset and shows the composer', (
     tester,
   ) async {

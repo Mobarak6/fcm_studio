@@ -64,10 +64,8 @@ class _PresetsScreenState extends State<PresetsScreen> {
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
+        // Your own presets first: the built-in list is long.
         children: [
-          const _Header('Built-in'),
-          for (final preset in state.builtIns)
-            _PresetTile(preset: preset, onAction: _onAction),
           const _Header('My presets'),
           if (state.userPresets.isEmpty)
             const Padding(
@@ -89,6 +87,9 @@ class _PresetsScreenState extends State<PresetsScreen> {
               }),
               onAction: _onAction,
             ),
+          const _Header('Built-in'),
+          for (final preset in state.builtIns)
+            _PresetTile(preset: preset, onAction: _onAction),
         ],
       ),
     );

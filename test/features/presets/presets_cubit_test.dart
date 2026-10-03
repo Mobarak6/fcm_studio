@@ -55,7 +55,7 @@ void main() {
   test('loads the four built-in presets as read-only', () async {
     final cubit = await loaded();
     expect(cubit.state.status, PresetsStatus.ready);
-    expect(cubit.state.builtIns, hasLength(4));
+    expect(cubit.state.builtIns, hasLength(27));
     expect(cubit.state.builtIns.every((p) => p.builtIn), isTrue);
     expect(cubit.state.userPresets, isEmpty);
     expect(cubit.state.byId('builtin.simple')?.name, 'Simple notification');
@@ -199,7 +199,7 @@ void main() {
 
     final restarted = await loaded();
     expect(restarted.state.status, PresetsStatus.ready);
-    expect(restarted.state.builtIns, hasLength(4));
+    expect(restarted.state.builtIns, hasLength(27));
     expect(restarted.state.userPresets, [saved]);
   });
 
@@ -207,7 +207,7 @@ void main() {
     final cubit = PresetsCubit(repository: _BrokenUserPresets(database));
     await expectLater(cubit.load(), throwsStateError);
     expect(cubit.state.status, PresetsStatus.ready);
-    expect(cubit.state.builtIns, hasLength(4));
+    expect(cubit.state.builtIns, hasLength(27));
   });
 
   test('duplicate makes an editable copy with a free name', () async {
@@ -239,7 +239,7 @@ void main() {
     await cubit.delete(renamed);
     await cubit.delete(cubit.state.builtIns.first);
     expect(cubit.state.userPresets, isEmpty);
-    expect(cubit.state.builtIns, hasLength(4));
+    expect(cubit.state.builtIns, hasLength(27));
   });
 
   test('export leaves out built-in presets', () async {

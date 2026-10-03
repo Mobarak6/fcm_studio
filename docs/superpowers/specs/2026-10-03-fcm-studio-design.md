@@ -272,7 +272,13 @@ VariableDef { key ([a-zA-Z_][a-zA-Z0-9_]*), label, type: text|multiline|number|b
   - Simple notification;
   - Notification with image;
   - Notification + data;
-  - Data only (silent / background).
+  - Data only (silent / background);
+  - **6amMart** (23 presets, named "User app · …", "Delivery app · …", "Store app · …" and "6amMart · …"). They copy the real payloads of the 6amMart backend (its push payload catalogue, branch `client_53371_fulgence_4.0`):
+    - Every key the backend sends is included, with `""` where the backend sends nothing. There are six message shapes: device, topic order, topic general, topic coupon, topic interest, and data-only.
+    - Device and most topic sends include `android.notification.channel_id: "6ammart"` and the iOS sound `notification.wav`.
+    - Together they cover all 35 `data.type` values the backend sends. When one preset covers several types, it offers a **Type** choice list.
+    - `test/features/presets/sixammart_presets_test.dart` pins each shape.
+- The Presets screen lists **My presets** first, then the built-in ones.
 - **Saving:** "Save as preset" creates a new one. "Update preset" overwrites the preset it came from. Unsaved changes show a dot on the preset name. The dot and the "Discard unsaved changes?" question apply only while a preset is loaded.
 - **Variables editor:** when the template contains placeholders without a definition, a quick fix offers to add them.
 - **Export** of one, several or all presets produces a `*.fcmpresets.json` file:

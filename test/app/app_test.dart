@@ -83,7 +83,7 @@ void main() {
 
   testWidgets('the built-in presets are loaded at startup', (tester) async {
     await pumpApp(tester, await buildTestDependencies(tester));
-    expect(readCubit<PresetsCubit>(tester).state.builtIns, hasLength(4));
+    expect(readCubit<PresetsCubit>(tester).state.builtIns, hasLength(27));
   });
 
   testWidgets('adb found at startup starts tracking phones', (tester) async {

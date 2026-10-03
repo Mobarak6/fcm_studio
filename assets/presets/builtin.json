@@ -71,6 +71,789 @@
       },
       "createdAt": "2026-10-03T00:00:00.000Z",
       "updatedAt": "2026-10-03T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.all.push_notification",
+      "name": "6amMart · Admin push notification (topic)",
+      "description": "What Admin panel > Push notification sends to a topic such as all_zone_customer, zone_<id>_customer, all_zone_delivery_man or all_zone_store. Every app shows it and opens the notification list on tap. Rental admin pushes use the type general.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Weekend offer"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Get 20% off on all orders this weekend."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["push_notification", "general"], "required": true, "defaultValue": "push_notification"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "type": "{{type}}",
+          "image": "{{image}}",
+          "body_loc_key": "{{type}}",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.all.maintenance",
+      "name": "6amMart · Maintenance mode (silent)",
+      "description": "Data only, so no notification is shown. maintenance (sent when maintenance mode is turned on or off) makes the apps reload their settings; demo_reset makes the user app show the demo reset dialog. Topics: maintenance_mode_user_app, maintenance_mode_deliveryman_app, maintenance_mode_vendor_app, maintenance_mode_rider_app, demo_reset.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Maintenance mode"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "We are under maintenance. Please check back soon."},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["maintenance", "demo_reset"], "required": true, "defaultValue": "maintenance"}
+      ],
+      "template": {
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "type": "{{type}}",
+          "image": "",
+          "body_loc_key": "{{type}}"
+        }
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.user.order_status",
+      "name": "User app · Order status",
+      "description": "Sent to the customer when an order changes status. Tapping opens the order details (guests go to the orders tab), and the app reloads its order lists.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order confirmed"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your order 100001 has been confirmed."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100001"},
+        {"key": "module_id", "label": "Module ID", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_type", "label": "Order type (e.g. delivery, take_away, parcel)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "trip_id": "",
+          "status": "",
+          "type": "order_status",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "{{module_id}}",
+          "sender_type": "",
+          "order_type": "{{order_type}}",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.user.message",
+      "name": "User app · Chat message",
+      "description": "A new chat message from a store (vendor), deliveryman or admin. Tapping opens the conversation; while that chat is open the app reloads the messages instead.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new message."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "conversation_id", "label": "Conversation ID", "type": "text", "required": true, "defaultValue": "1"},
+        {"key": "sender_type", "label": "Sender", "type": "enum", "options": ["vendor", "delivery_man", "admin"], "required": true, "defaultValue": "vendor"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "message",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "{{conversation_id}}",
+          "module_id": "",
+          "sender_type": "{{sender_type}}",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.user.wallet",
+      "name": "User app · Wallet & rewards",
+      "description": "add_fund (also used for wallet debits) and cashback open the wallet; loyalty_point opens loyalty points; referral_code and wallet_transfer open the notification list. add_fund, cashback and loyalty_point also reload the profile.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Fund added"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Fund added to your wallet."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["add_fund", "cashback", "loyalty_point", "referral_code", "wallet_transfer"], "required": true, "defaultValue": "add_fund"},
+        {"key": "order_id", "label": "Order ID (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "trip_id": "",
+          "status": "",
+          "type": "{{type}}",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.user.account",
+      "name": "User app · Account (block, unblock, OTP)",
+      "description": "block and unblock open the sign-in screen on tap. otp carries a delivery OTP for the customer; tapping it does nothing.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Account blocked"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your account has been blocked. Please contact support."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["block", "unblock", "otp"], "required": true, "defaultValue": "block"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "{{type}}",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.user.subscription",
+      "name": "User app · Pro subscription & reminders",
+      "description": "Pro customer subscription updates and the monthly order reminder. Shown as a normal notification; tapping opens the notification list.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Subscription activated"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your Pro subscription is now active."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["customer_subscription_activated", "customer_subscription_expire_reminder", "subscription_expired", "subscription_canceled", "monthly_order_reminder"], "required": true, "defaultValue": "customer_subscription_activated"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "{{type}}",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.user.trip_status",
+      "name": "User app · Rental trip status",
+      "description": "A rental trip changed status; the trip ID goes in order_id. Tapping opens the trip details. With the status completed and the app open, the app shows the payment sheet.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Trip confirmed"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your trip 1 has been confirmed."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "1"},
+        {"key": "status", "label": "Trip status", "type": "enum", "options": ["pending", "confirmed", "ongoing", "completed", "canceled"], "required": true, "defaultValue": "confirmed"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "trip_id": "",
+          "status": "{{status}}",
+          "type": "trip_status",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.user.coupon",
+      "name": "User app · New coupon (topic)",
+      "description": "Sent to every customer in the store's zone when a store adds or updates a coupon. Tapping opens the notification list.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New coupon"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Use code SAVE20 to get 20% off."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "id", "label": "ID", "type": "text", "required": false, "defaultValue": "1"},
+        {"key": "coupon_id", "label": "Coupon ID", "type": "text", "required": false, "defaultValue": "1"},
+        {"key": "module_id", "label": "Module ID", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "id": "{{id}}",
+          "type": "coupon",
+          "module_id": "{{module_id}}",
+          "coupon_id": "{{coupon_id}}",
+          "image": "{{image}}",
+          "body_loc_key": "coupon",
+          "click_action": ""
+        }
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.user.interest",
+      "name": "User app · New item for your interests (topic)",
+      "description": "Sent to customers who follow a category when a store adds an item in it. Tapping opens the notification list.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New item"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "A new item you may like is now available."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "id", "label": "Item ID", "type": "text", "required": false, "defaultValue": "1"},
+        {"key": "module_id", "label": "Module ID", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "price", "label": "Price", "type": "text", "required": false, "defaultValue": "10.00"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "id": "{{id}}",
+          "type": "interest",
+          "module_id": "{{module_id}}",
+          "image": "{{image}}",
+          "price": "{{price}}",
+          "body_loc_key": "interest",
+          "click_action": ""
+        }
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.delivery.order_request",
+      "name": "Delivery app · New order request (topic)",
+      "description": "A new order for the deliverymen of a zone (topic zone_<id>_delivery_man) or of one store (restaurant_dm_<store id>, which may send new_order). With the app open it shows the new request dialog; in the background order_request starts the ringing alert. The order types parcel_order and prescription hide the item count.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New order request"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "A new order is waiting for a deliveryman."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["order_request", "new_order"], "required": true, "defaultValue": "order_request"},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100001"},
+        {"key": "order_type", "label": "Order type (e.g. delivery, parcel_order, prescription)", "type": "text", "required": false, "defaultValue": "delivery"},
+        {"key": "module_id", "label": "Module ID", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "zone_id", "label": "Zone ID", "type": "text", "required": false, "defaultValue": "1"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "order_id": "{{order_id}}",
+          "order_type": "{{order_type}}",
+          "type": "{{type}}",
+          "image": "{{image}}",
+          "module_id": "{{module_id}}",
+          "zone_id": "{{zone_id}}",
+          "title_loc_key": "{{order_id}}",
+          "body_loc_key": "{{type}}",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.delivery.assign",
+      "name": "Delivery app · Order assigned",
+      "description": "A delivery company assigned an order to the deliveryman (the admin panel sends order_status instead). With the app open it shows the assigned order dialog; tapping opens the order details.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order assigned"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have been assigned order 100001."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100001"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "trip_id": "",
+          "status": "",
+          "type": "assign",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.delivery.order_status",
+      "name": "Delivery app · Order status / unassigned",
+      "description": "order_status: an order was assigned (from the admin panel) or changed; tapping opens the order details, and in the background it starts the ringing alert. unassign: the order was taken away; tapping opens the order requests tab.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order assigned"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Order 100001 has been assigned to you."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["order_status", "unassign"], "required": true, "defaultValue": "order_status"},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100001"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "trip_id": "",
+          "status": "",
+          "type": "{{type}}",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.delivery.message",
+      "name": "Delivery app · Chat message",
+      "description": "A new chat message from a customer (sender user), store (vendor) or admin. Tapping opens the conversation.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new message."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "conversation_id", "label": "Conversation ID", "type": "text", "required": true, "defaultValue": "1"},
+        {"key": "sender_type", "label": "Sender", "type": "enum", "options": ["user", "vendor", "admin"], "required": true, "defaultValue": "user"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "message",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "{{conversation_id}}",
+          "module_id": "",
+          "sender_type": "{{sender_type}}",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.delivery.earnings",
+      "name": "Delivery app · Earnings & wallet",
+      "description": "withdraw (request approved or denied) opens My account; cash_collect, deliveryman_referral and loyalty_point open the notification list.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Withdraw request approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your withdraw request has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["withdraw", "cash_collect", "deliveryman_referral", "loyalty_point"], "required": true, "defaultValue": "withdraw"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "{{type}}",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.delivery.account",
+      "name": "Delivery app · Account (block, unblock)",
+      "description": "Careful: with the app open, block signs the deliveryman out at once. Tapping either one opens the sign-in screen.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Account blocked"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your account has been blocked."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["block", "unblock"], "required": true, "defaultValue": "block"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "{{type}}",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.store.new_order",
+      "name": "Store app · New order",
+      "description": "A customer placed an order with the store (store employees get it too). With the app open it shows the new order dialog; in the background it starts the ringing alert. Tapping opens the order details.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New order placed"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new order 100001."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100001"},
+        {"key": "module_id", "label": "Module ID", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_type", "label": "Order type (e.g. delivery, take_away)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "trip_id": "",
+          "status": "",
+          "type": "new_order",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "{{module_id}}",
+          "sender_type": "",
+          "order_type": "{{order_type}}",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.store.order_status",
+      "name": "Store app · Order status",
+      "description": "An order changed status. Tapping opens the order details (the trip or booking in the rental and service modules); in the background it starts the ringing alert.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order status updated"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Order 100001 has been delivered."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100001"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "trip_id": "",
+          "status": "",
+          "type": "order_status",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.store.message",
+      "name": "Store app · Chat message",
+      "description": "A new chat message from a customer (sender user) or a deliveryman. Tapping opens the conversation.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new message."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "conversation_id", "label": "Conversation ID", "type": "text", "required": true, "defaultValue": "1"},
+        {"key": "sender_type", "label": "Sender", "type": "enum", "options": ["user", "delivery_man"], "required": true, "defaultValue": "user"},
+        {"key": "order_id", "label": "Order ID (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "trip_id": "",
+          "status": "",
+          "type": "message",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "{{conversation_id}}",
+          "module_id": "",
+          "sender_type": "{{sender_type}}",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.store.items",
+      "name": "Store app · Item approved / rejected",
+      "description": "product_approve opens the store's item list; product_rejected opens the pending items.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Item approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your item has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["product_approve", "product_rejected"], "required": true, "defaultValue": "product_approve"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "{{type}}",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.store.advertisement",
+      "name": "Store app · Advertisement",
+      "description": "An advertisement was created, approved, denied or paused. Tapping opens the advertisement details, and the app reloads the list.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Advertisement approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your advertisement has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "advertisement_id", "label": "Advertisement ID", "type": "text", "required": true, "defaultValue": "1"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "advertisement",
+          "data_id": "",
+          "advertisement_id": "{{advertisement_id}}",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.store.campaign",
+      "name": "Store app · Campaign",
+      "description": "The store's request to join a campaign was approved or rejected. Tapping opens the campaign details; the campaign ID goes in data_id.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Campaign request approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your request to join the campaign has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "data_id", "label": "Campaign ID", "type": "text", "required": true, "defaultValue": "1"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "campaign",
+          "data_id": "{{data_id}}",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6ammart.store.account",
+      "name": "Store app · Account & business",
+      "description": "subscription opens My subscription; withdraw opens the wallet tab; block and unblock open the sign-in screen; verified_badge opens the notification list.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Subscription renewed"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your subscription has been renewed."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["subscription", "withdraw", "verified_badge", "block", "unblock"], "required": true, "defaultValue": "subscription"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "trip_id": "",
+          "status": "",
+          "type": "{{type}}",
+          "data_id": "",
+          "advertisement_id": "",
+          "conversation_id": "",
+          "module_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "6ammart"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-04T00:00:00.000Z",
+      "updatedAt": "2026-10-04T00:00:00.000Z"
     }
   ]
 }
