@@ -24,16 +24,30 @@ class PresetsScreen extends StatefulWidget {
 }
 
 class _PresetsScreenState extends State<PresetsScreen> {
-  /// User presets ticked for export.
+  /// Presets ticked for export, built-in ones included.
   final Set<String> _selected = {};
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<PresetsCubit>().state;
+    // Your own presets first: the built-in list is long.
+    final shown = [...state.userPresets, ...state.builtIns];
     final selected = [
-      for (final p in state.userPresets)
+      for (final p in shown)
         if (_selected.contains(p.id)) p,
     ];
+    Widget tile(Preset preset) => _PresetTile(
+      preset: preset,
+      selected: _selected.contains(preset.id),
+      onSelected: (on) => setState(() {
+        if (on) {
+          _selected.add(preset.id);
+        } else {
+          _selected.remove(preset.id);
+        }
+      }),
+      onAction: _onAction,
+    );
     return Scaffold(
       appBar: AppBar(
         title: const Text('Presets'),
@@ -46,14 +60,11 @@ class _PresetsScreenState extends State<PresetsScreen> {
           ),
           TextButton.icon(
             key: PresetsScreen.exportKey,
-            onPressed: state.userPresets.isEmpty
-                ? null
-                : () => _run(
-                    'export presets',
-                    () => _export(
-                      selected.isEmpty ? state.userPresets : selected,
-                    ),
-                  ),
+            // Nothing ticked exports every preset, built-in ones included.
+            onPressed: () => _run(
+              'export presets',
+              () => _export(selected.isEmpty ? shown : selected),
+            ),
             icon: const Icon(Icons.save_alt),
             label: Text(
               selected.isEmpty ? 'Export all' : 'Export ${selected.length}',
@@ -64,7 +75,6 @@ class _PresetsScreenState extends State<PresetsScreen> {
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        // Your own presets first: the built-in list is long.
         children: [
           const _Header('My presets'),
           if (state.userPresets.isEmpty)
@@ -74,22 +84,9 @@ class _PresetsScreenState extends State<PresetsScreen> {
                 'No presets yet. Save one from the composer, or import a file.',
               ),
             ),
-          for (final preset in state.userPresets)
-            _PresetTile(
-              preset: preset,
-              selected: _selected.contains(preset.id),
-              onSelected: (on) => setState(() {
-                if (on) {
-                  _selected.add(preset.id);
-                } else {
-                  _selected.remove(preset.id);
-                }
-              }),
-              onAction: _onAction,
-            ),
+          for (final preset in state.userPresets) tile(preset),
           const _Header('Built-in'),
-          for (final preset in state.builtIns)
-            _PresetTile(preset: preset, onAction: _onAction),
+          for (final preset in state.builtIns) tile(preset),
         ],
       ),
     );
@@ -278,14 +275,14 @@ class _Header extends StatelessWidget {
 class _PresetTile extends StatelessWidget {
   const _PresetTile({
     required this.preset,
+    required this.selected,
+    required this.onSelected,
     required this.onAction,
-    this.selected = false,
-    this.onSelected,
   });
 
   final Preset preset;
   final bool selected;
-  final ValueChanged<bool>? onSelected;
+  final ValueChanged<bool> onSelected;
   final Future<void> Function(Preset preset, PresetAction action) onAction;
 
   @override
@@ -297,13 +294,22 @@ class _PresetTile extends StatelessWidget {
     ].join(' · ');
     return ListTile(
       key: ValueKey('preset-${preset.id}'),
-      leading: preset.builtIn
-          ? const Icon(Icons.lock_outline)
-          : Checkbox(
-              value: selected,
-              onChanged: (value) => onSelected?.call(value ?? false),
+      leading: Checkbox(
+        value: selected,
+        onChanged: (value) => onSelected(value ?? false),
+      ),
+      title: Row(
+        children: [
+          Flexible(child: Text(preset.name)),
+          if (preset.builtIn) ...[
+            const SizedBox(width: 6),
+            const Tooltip(
+              message: 'Built-in: read-only. Duplicate it to edit a copy.',
+              child: Icon(Icons.lock_outline, size: 16),
             ),
-      title: Text(preset.name),
+          ],
+        ],
+      ),
       subtitle: Text(details),
       onTap: () => onAction(preset, PresetAction.open),
       trailing: PopupMenuButton<PresetAction>(
@@ -319,11 +325,20 @@ class _PresetTile extends StatelessWidget {
             value: PresetAction.duplicate,
             child: Text('Duplicate'),
           ),
-          if (!preset.builtIn) ...const [
-            PopupMenuItem(value: PresetAction.edit, child: Text('Rename…')),
-            PopupMenuItem(value: PresetAction.export, child: Text('Export…')),
-            PopupMenuItem(value: PresetAction.delete, child: Text('Delete…')),
-          ],
+          if (!preset.builtIn)
+            const PopupMenuItem(
+              value: PresetAction.edit,
+              child: Text('Rename…'),
+            ),
+          const PopupMenuItem(
+            value: PresetAction.export,
+            child: Text('Export…'),
+          ),
+          if (!preset.builtIn)
+            const PopupMenuItem(
+              value: PresetAction.delete,
+              child: Text('Delete…'),
+            ),
         ],
       ),
     );

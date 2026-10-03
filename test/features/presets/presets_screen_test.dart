@@ -81,17 +81,59 @@ void main() {
     expect(find.text('Simple notification (copy)'), findsOneWidget);
   });
 
-  testWidgets('Export all saves a presets file without the built-in ones', (
+  testWidgets('Export all saves every preset, built-in ones included', (
     tester,
   ) async {
     final (_, presets, files) = await openPresets(tester);
     await saveMine(tester, presets, 'My alerts');
     await tester.tap(find.byKey(PresetsScreen.exportKey));
     await settleAsync(tester);
-    expect(files.saved.single.name, 'my-alerts.fcmpresets.json');
+    expect(files.saved.single.name, 'fcm-studio-presets.fcmpresets.json');
+    final exported = PresetCodec.decode(files.saved.single.text);
+    expect(exported, hasLength(28));
+    expect(exported.first.name, 'My alerts');
+    expect(exported.map((p) => p.name), contains('Store app · New order'));
+    // They import as normal, editable presets.
+    expect(exported.any((p) => p.builtIn), isFalse);
+  });
+
+  testWidgets('Export all works before you have presets of your own', (
+    tester,
+  ) async {
+    final (_, _, files) = await openPresets(tester);
+    await tester.tap(find.byKey(PresetsScreen.exportKey));
+    await settleAsync(tester);
+    expect(PresetCodec.decode(files.saved.single.text), hasLength(27));
+  });
+
+  testWidgets('a ticked built-in preset is exported on its own', (
+    tester,
+  ) async {
+    final (_, _, files) = await openPresets(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('preset-builtin.simple')),
+        matching: find.byType(Checkbox),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Export 1'), findsOneWidget);
+
+    await tester.tap(find.byKey(PresetsScreen.exportKey));
+    await settleAsync(tester);
+    expect(files.saved.single.name, 'simple-notification.fcmpresets.json');
     expect(PresetCodec.decode(files.saved.single.text).map((p) => p.name), [
-      'My alerts',
+      'Simple notification',
     ]);
+  });
+
+  testWidgets("a built-in preset's menu offers Export…", (tester) async {
+    final (_, _, files) = await openPresets(tester);
+    await tester.tap(find.byKey(const ValueKey('preset-menu-builtin.simple')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Export…'));
+    await settleAsync(tester);
+    expect(files.saved.single.name, 'simple-notification.fcmpresets.json');
   });
 
   testWidgets('Import asks about name conflicts and can keep both', (

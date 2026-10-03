@@ -289,7 +289,10 @@ VariableDef { key ([a-zA-Z_][a-zA-Z0-9_]*), label, type: text|multiline|number|b
   { "format": "fcm-studio.presets", "version": 1, "exportedAt": "…", "presets": [ … ] }
   ```
   On desktop the user chooses where to save the file. On web the file is downloaded.
-  Built-in presets are not exported; every install has them.
+  - Every preset has a tick box, built-in ones included.
+  - **Export all** (nothing ticked) exports every preset: yours and the built-in ones.
+  - **Export N** exports the ticked presets. A built-in preset's menu also has **Export…**.
+  - Built-in presets are written as normal presets, so they import as editable copies. A name clash with a built-in preset is skipped or kept as a copy, never replaced.
 - **Import:**
   - checks `format`, and rejects a `version` newer than the app supports;
   - checks each preset;

@@ -242,11 +242,16 @@ void main() {
     expect(cubit.state.builtIns, hasLength(27));
   });
 
-  test('export leaves out built-in presets', () async {
+  test('export includes built-in presets, as normal presets', () async {
     final cubit = await loaded();
     await cubit.saveAs(name: 'A', template: template, variables: variables);
-    final text = cubit.exportText(cubit.state.all);
-    expect(PresetCodec.decode(text).map((p) => p.name), ['A']);
+    final exported = PresetCodec.decode(cubit.exportText(cubit.state.all));
+    expect(exported, hasLength(28));
+    expect(
+      exported.map((p) => p.name),
+      containsAll(['A', 'Simple notification']),
+    );
+    expect(exported.any((p) => p.builtIn), isFalse);
   });
 
   test(

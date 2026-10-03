@@ -143,12 +143,10 @@ class PresetsCubit extends Cubit<PresetsState> {
     );
   }
 
-  /// The export file for [presets]. Built-in presets are left out, because
-  /// every install has them.
-  String exportText(List<Preset> presets) => PresetCodec.encode(
-    presets.where((p) => !p.builtIn).toList(),
-    exportedAt: _clock.now(),
-  );
+  /// The export file for [presets]. Built-in ones are written as normal
+  /// presets (see [PresetCodec.encode]), so they import as editable copies.
+  String exportText(List<Preset> presets) =>
+      PresetCodec.encode(presets, exportedAt: _clock.now());
 
   /// Reads an import file and lists name conflicts.
   /// Throws [PresetFormatException] when the file can't be imported.
