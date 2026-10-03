@@ -56,7 +56,7 @@ These were checked on 2026-10-03:
      oauth2.googleapis.com          fcm / firebase.googleapis.com          adb → Android device
 ```
 
-`*` The device feature exists only on desktop. On web, the platform layer reports it as unsupported and the UI hides it.
+`*` On desktop the device feature runs adb. From M5, Chromium web browsers (Chrome, Edge, Opera) talk to the phone directly over WebUSB, as described in [2026-10-04-webusb-devices-design.md](2026-10-04-webusb-devices-design.md). Other browsers show an explanation on the Devices screen instead.
 
 ### 3.2 Project structure
 
@@ -383,7 +383,9 @@ Turns each failure into a **title, an explanation and a suggested action**. The 
   - **With `$FCM_ACCESS_TOKEN` placeholder.**
 - Only bash quoting is supported. On Windows this works in Git Bash or WSL; PowerShell is not supported in v1.
 
-## 9. Device tokens over adb (desktop only)
+## 9. Device tokens (desktop: adb; web: WebUSB)
+
+This section describes the desktop path. The web path (M5) runs the same phone commands over WebUSB; see [2026-10-04-webusb-devices-design.md](2026-10-04-webusb-devices-design.md).
 
 ### 9.1 Finding adb
 
@@ -463,6 +465,7 @@ This step runs only after the user confirms, because it restarts the app.
   - *macOS:* use `MacOsOptions(usesDataProtectionKeychain: false)`. The default data-protection keychain needs the `keychain-access-groups` entitlement and a signing team, which unsigned internal builds don't have. The login keychain may ask "Always Allow" after a rebuild changes the app's signature.
 - **Web:**
   - service account keys stay **in memory only** by default;
+  - the browser's USB debugging key (M5) is kept in `SecretStore` as `adb:browser-key` by default, so phones don't ask again on every visit;
   - "Remember on this browser" saves them through `flutter_secure_storage`'s web backend, with a warning that browser storage can be read by scripts on the same site.
 - **Removing a project** also deletes its secret, unless another project uses the same credential.
 - **macOS:**
@@ -513,7 +516,8 @@ This step runs only after the user confirms, because it restarts the app.
 | M2 | **Developer experience.** Form tab, presets (built-in, editor, variables, import/export), saved targets, history, dry run, cURL, prod safeguard | The success test works with a pasted token |
 | M3 | **Devices.** `AdbLocator`, `DevicesBloc`, packages, run-as token, logcat fallback, sender-ID check | The success test works fully on the Redmi in under 30 s |
 | M4 | **Google sign-in.** Desktop loopback, web popup, project list import | A teammate adds projects and sends without any key file |
-| M5 | **Release builds.** macOS `.app` zip, Windows zip, static web build, README (setup, OAuth, manual checklist) | A teammate installs it from the README alone |
+| M5 | **Phones on the web (WebUSB).** adb protocol in Dart over WebUSB, shared `AdbCommands`, Devices on Chromium web ([design](2026-10-04-webusb-devices-design.md)) | The WebUSB success test (design §10) passes on the Redmi in Chrome |
+| M6 | **Release builds.** macOS `.app` zip, Windows zip, static web build, README (setup, OAuth, manual checklist) | A teammate installs it from the README alone |
 
 **M0 token-file capture (2026-10-03):** deferred to the start of M3. It needs a debug build that uses `firebase_messaging` on the Redmi, plus the user running the capture commands, and nothing in M1 depends on it. On 2026-10-04 the capture was skipped; a hand-written fixture in the §9.3 format is used instead, and the M3 success test checks the real format.
 
