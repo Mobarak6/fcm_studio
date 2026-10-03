@@ -6,11 +6,28 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/app_harness.dart';
 
+Finder get searchField => find.descendant(
+  of: find.byKey(PresetPicker.dropdownKey),
+  matching: find.byType(TextField),
+);
+
+Finder menuEntry(String label) =>
+    find.widgetWithText(MenuItemButton, label).hitTestable();
+
+String fieldText(WidgetTester tester) =>
+    tester.widget<TextField>(searchField).controller!.text;
+
 void main() {
-  Future<void> pickPreset(WidgetTester tester, String label) async {
-    await tester.tap(find.byKey(PresetPicker.dropdownKey));
+  Future<void> search(WidgetTester tester, String text) async {
+    await tester.tap(searchField);
     await tester.pumpAndSettle();
-    await tester.tap(find.text(label).last);
+    await tester.enterText(searchField, text);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> pickPreset(WidgetTester tester, String label) async {
+    await search(tester, label);
+    await tester.tap(menuEntry(label));
     await tester.pumpAndSettle();
   }
 
@@ -22,6 +39,40 @@ void main() {
     expect(composer.state.preset?.id, 'builtin.simple');
     expect(find.byKey(const ValueKey('variable-title')), findsOneWidget);
     expect(find.text('Hello from FCM Studio'), findsWidgets);
+  });
+
+  testWidgets('typed words match in any order, ignoring case', (tester) async {
+    final (_, composer) = await pumpAppWithProject(tester);
+    await search(tester, 'CHAT store');
+    expect(menuEntry('Store app · Chat message (built-in)'), findsOneWidget);
+    expect(menuEntry('User app · Chat message (built-in)'), findsNothing);
+    expect(menuEntry('Simple notification (built-in)'), findsNothing);
+
+    await tester.tap(menuEntry('Store app · Chat message (built-in)'));
+    await tester.pumpAndSettle();
+    expect(composer.state.preset?.id, 'builtin.6ammart.store.message');
+  });
+
+  testWidgets('my presets are listed before the built-in ones', (tester) async {
+    await pumpAppWithProject(tester);
+    await tester.runAsync(
+      () => readCubit<PresetsCubit>(tester).saveAs(
+        name: 'Mine',
+        template: const {
+          'notification': {'title': 'A'},
+        },
+        variables: const [],
+      ),
+    );
+    await tester.pump();
+    await tester.tap(searchField);
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(menuEntry('Mine')).dy,
+      lessThan(
+        tester.getTopLeft(menuEntry('Simple notification (built-in)')).dy,
+      ),
+    );
   });
 
   testWidgets('an edit shows the dot; Save as stores a preset and clears it', (
@@ -200,6 +251,8 @@ void main() {
     await tester.tap(find.text('Keep editing'));
     await tester.pumpAndSettle();
     expect(composer.state.preset?.id, 'builtin.simple');
+    // The field shows the preset that is still loaded, with its dot.
+    expect(fieldText(tester), '• Simple notification (built-in)');
 
     await pickPreset(tester, 'Data only (silent / background) (built-in)');
     await tester.tap(find.text('Discard'));

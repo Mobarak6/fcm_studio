@@ -250,7 +250,10 @@ The form is a structured editor for common paths. **Fields it doesn't cover are 
 - **Left column:**
   - project switcher;
   - target picker: Token / Topic / Condition, an autocomplete from saved targets, and **From device…** on desktop (it opens the Devices screen; the only ready phone is selected automatically);
-  - preset picker.
+  - preset picker: a search field.
+    - Typed words match in any order, ignoring case ("store chat" finds "Store app · Chat message").
+    - My presets are listed before the built-in ones.
+    - When you're not typing, it shows the loaded preset, with a dot if there are unsaved changes.
 - **Centre:** the Form and JSON tabs.
 - **Right column:**
   - the **Preview** of the final request body;

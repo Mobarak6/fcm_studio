@@ -25,48 +25,16 @@ class PresetPicker extends StatelessWidget {
           previous.isDirty != current.isDirty,
       builder: (context, composer) {
         final current = composer.preset;
-        final selectedId = current != null && presets.byId(current.id) != null
-            ? current.id
-            : null;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Preset', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
-            DropdownButton<String>(
-              key: dropdownKey,
-              isExpanded: true,
-              hint: const Text('No preset'),
-              value: selectedId,
-              items: [
-                for (final preset in presets.all)
-                  DropdownMenuItem(
-                    value: preset.id,
-                    child: Text(
-                      _label(preset),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-              // The dot marks unsaved changes (spec §6).
-              selectedItemBuilder: (context) => [
-                for (final preset in presets.all)
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      preset.id == selectedId && composer.isDirty
-                          ? '• ${_label(preset)}'
-                          : _label(preset),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-              onChanged: (id) {
-                final preset = id == null ? null : presets.byId(id);
-                if (preset != null) {
-                  openPreset(context, preset);
-                }
-              },
+            _PresetSearchField(
+              // Your own presets first: the built-in list is long.
+              presets: [...presets.userPresets, ...presets.builtIns],
+              selected: current == null ? null : presets.byId(current.id),
+              isDirty: composer.isDirty,
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -91,6 +59,129 @@ class PresetPicker extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// A search field over [presets]. While it is not being typed in, it shows
+/// the loaded preset.
+class _PresetSearchField extends StatefulWidget {
+  const _PresetSearchField({
+    required this.presets,
+    required this.selected,
+    required this.isDirty,
+  });
+
+  final List<Preset> presets;
+  final Preset? selected;
+  final bool isDirty;
+
+  @override
+  State<_PresetSearchField> createState() => _PresetSearchFieldState();
+}
+
+class _PresetSearchFieldState extends State<_PresetSearchField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: _selectedText,
+  );
+  final FocusNode _focus = FocusNode();
+
+  /// The dot marks unsaved changes (spec §6).
+  String get _selectedText {
+    final selected = widget.selected;
+    if (selected == null) {
+      return '';
+    }
+    final label = PresetPicker._label(selected);
+    return widget.isDirty ? '• $label' : label;
+  }
+
+  /// Keeps the entries whose label holds every typed word, in any order.
+  static List<DropdownMenuEntry<String>> _matching(
+    List<DropdownMenuEntry<String>> entries,
+    String filter,
+  ) {
+    final words = filter
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList();
+    return [
+      for (final entry in entries)
+        if (words.every(entry.label.toLowerCase().contains)) entry,
+    ];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_showSelectedWhenLeft);
+  }
+
+  @override
+  void didUpdateWidget(_PresetSearchField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // e.g. a preset was loaded, edited or renamed elsewhere.
+    if (!_focus.hasFocus) {
+      _showSelected();
+    }
+  }
+
+  void _showSelectedWhenLeft() {
+    if (!_focus.hasFocus) {
+      _showSelected();
+    }
+  }
+
+  void _showSelected() {
+    final text = _selectedText;
+    if (_controller.text != text) {
+      _controller.text = text;
+    }
+  }
+
+  Future<void> _open(String? id) async {
+    final preset = id == null
+        ? null
+        : context.read<PresetsCubit>().state.byId(id);
+    if (preset == null) {
+      return;
+    }
+    if (!await openPreset(context, preset) && mounted) {
+      // "Keep editing": the loaded preset stays, so show it again.
+      _showSelected();
+    }
+  }
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // No initialSelection: it would replace the text, dropping the dot.
+    return DropdownMenu<String>(
+      key: PresetPicker.dropdownKey,
+      controller: _controller,
+      focusNode: _focus,
+      expandedInsets: EdgeInsets.zero,
+      enableFilter: true,
+      filterCallback: _matching,
+      requestFocusOnTap: true,
+      menuHeight: 360,
+      leadingIcon: const Icon(Icons.search),
+      hintText: 'Search presets',
+      dropdownMenuEntries: [
+        for (final preset in widget.presets)
+          DropdownMenuEntry(
+            value: preset.id,
+            label: PresetPicker._label(preset),
+          ),
+      ],
+      onSelected: _open,
     );
   }
 }
