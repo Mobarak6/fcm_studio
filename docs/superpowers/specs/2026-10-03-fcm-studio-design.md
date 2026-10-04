@@ -577,6 +577,11 @@ This step runs only after the user confirms, because it restarts the app.
   - **Done when** a teammate, with no key file, adds a project this way and sends to their phone.
   - Optional: the same on Windows (`flutter run -d windows`).
 
+**M5 status (2026-10-04):**
+- *Done:* the M5 code with its automated tests passing and a clean `flutter analyze`; `flutter build web` succeeds.
+- *Covered by unit tests:* the adb protocol, key pairing, shell v2 and the phone list, run against a fake phone. The browser layer (`webusb/browser/`) is checked by compiling it.
+- *Manual, pending:* the WebUSB success test (WebUSB design §10) on the Redmi in Chrome. That test also fills in the design's "to check" rows.
+
 ## 14. Open risks
 
 - **Token file format.** The format is inferred from the Firebase SDK's code and has not been seen on a device yet. M0 confirms it, and the parser accepts both known formats. The capture was skipped on 2026-10-04, so the M3 success test on the Redmi confirms the format.

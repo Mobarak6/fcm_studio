@@ -1,6 +1,8 @@
 # FCM Studio: phones on the web (WebUSB)
 
-**Status:** design approved in conversation on 2026-10-04, waiting for review of this written version.
+**Status:**
+- **Implemented:** 2026-10-04 (M5 code with tests).
+- **Pending:** the manual success test in §10, on the Redmi in Chrome.
 
 **Milestone:** M5. It comes before release builds, which move to M6.
 
@@ -42,6 +44,7 @@ The browser talks to the phone directly over **WebUSB**, so no adb has to be ins
 | While the adb server (or Android Studio) holds the phone, `claimInterface` fails in the browser | To check in the M5 success test (record the exact error) |
 | The Redmi 14C announces `shell_v2` in its `CNXN` banner | To check in the M5 success test |
 | On Windows, the phone's adb interface must use the WinUSB driver (Google USB Driver) | To check on Windows if a Windows PC is available |
+| Signing in the browser takes about 160 ms with CRT (about 510 ms without), once per connection | Measured 2026-10-04 with the dart2js build in Node 22 |
 
 ## 4. Architecture
 
@@ -117,7 +120,7 @@ The header is six little-endian `uint32` values: `command`, `arg0`, `arg1`, `dat
 **Streams:**
 - `open(service)` sends `OPEN(localId, 0, service + "\0")` and returns an `AdbStream`. `OKAY` confirms it; `CLSE` means the phone refused it.
 - Each received `WRTE` is acknowledged with `OKAY`.
-- Each `write` waits for the phone's `OKAY` before the next `WRTE` (classic flow control; we don't announce `delayed_ack`).
+- Streams only receive. No command sends stdin, so the host never writes `WRTE`, and the design has no flow control for host writes (no `delayed_ack` either).
 - `close()` sends `CLSE`.
 - One reader loop dispatches messages by local ID, and writes are serialized.
 
@@ -207,7 +210,7 @@ abstract interface class DeviceShell {
 
 **Wiring on web:**
 - `DevicesBloc` and `TokenReaderCubit` get the single `WebUsbAdbService`, and tracking starts at app start.
-- There is no adb path and no `AdbSetupCubit.locate()`. The adb exit guard is replaced by closing all connections when the app exits.
+- There is no adb path and no `AdbSetupCubit.locate()`. The adb exit guard stays desktop-only: when the tab closes, the browser releases the phones.
 
 **Devices screen on web:**
 - a **Connect a phone…** button;
@@ -284,7 +287,6 @@ Every message says what happened and what to do (main spec §11). Tokens are nev
   - refused for good: the connection stays waiting;
   - banner without `shell_v2`;
   - several streams at once with interleaved `WRTE`s;
-  - flow control (no second `WRTE` before `OKAY`);
   - `CLSE` from the phone;
   - a transport failure fails all streams.
 - **`ShellV2`:** split and packed packets, stdout and stderr, the exit code, and an empty output.
@@ -324,7 +326,7 @@ Run it on the hosted HTTPS build (or `flutter run -d chrome`) in Chrome on macOS
 ## 12. Open risks
 
 - **Large transfers:** some phones need a zero-length packet after a transfer whose size is an exact multiple of the endpoint's packet size. We only send small payloads, but `WebUsbTransport` sends a zero-length packet in that case.
-- **Slow signing:** `BigInt.modPow` compiled to JavaScript may take a noticeable moment. CRT keeps it to about four times faster than plain `modPow`, and signing happens once per connection.
+- **Slow signing:** measured at about 160 ms per connection (§3), so it isn't a problem.
 - **Two USB devices with the same serial** (rare, e.g. cheap phones): the fallback identity keeps them apart within one session.
 
 ## 13. Changes to the main spec (made with this design)
