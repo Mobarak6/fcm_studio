@@ -1,6 +1,9 @@
+import 'package:fcm_studio/app/app_error_cubit.dart';
 import 'package:fcm_studio/app/navigation_cubit.dart';
+import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/features/devices/bloc/devices_bloc.dart';
 import 'package:fcm_studio/features/devices/cubit/token_reader_cubit.dart';
+import 'package:fcm_studio/features/devices/data/phone_access.dart';
 import 'package:fcm_studio/features/devices/domain/adb_device.dart';
 import 'package:fcm_studio/features/devices/domain/device_token.dart';
 import 'package:fcm_studio/features/devices/view/device_actions.dart';
@@ -10,11 +13,24 @@ import 'package:fcm_studio/features/settings/cubit/adb_setup_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Plugged-in phones, their apps, and reading an app's token (spec §9).
+/// Plugged-in phones, their apps, and reading an app's token (spec §9; on
+/// the web through WebUSB, design §4.9).
 class DevicesScreen extends StatelessWidget {
   const DevicesScreen({super.key});
 
   static const openSettingsKey = Key('devices-open-settings');
+  static const connectPhoneKey = Key('devices-connect-phone');
+
+  static Key deviceMenuKey(String serial) => ValueKey('device-menu-$serial');
+
+  static const noWebUsbMessage =
+      'Reading tokens from a phone needs Chrome or Edge. You can still paste '
+      'a token in Target.';
+  static const notSecureMessage =
+      'Open FCM Studio over https to connect a phone.';
+  static const keyNotice =
+      'This browser keeps a USB debugging key for this site. Forget removes '
+      'its access to a phone.';
 
   /// Changes when a different phone becomes ready to read.
   static String? _readyPhone(DevicesState state) {
@@ -29,8 +45,27 @@ class DevicesScreen extends StatelessWidget {
       ? read.tokens.single
       : null;
 
+  /// The browser only shows its chooser after a button press.
+  static Future<void> _connectPhone(BuildContext context) async {
+    final errors = context.read<AppErrorCubit>();
+    try {
+      await context.read<PhoneAccess>().connectPhone();
+    } on Object catch (error) {
+      errors.report(error, context: 'Could not connect the phone');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final access = context.read<PlatformFeatures>().deviceAccess;
+    if (access == DeviceAccess.noWebUsb || access == DeviceAccess.notSecure) {
+      return _NoPhoneAccess(
+        message: access == DeviceAccess.noWebUsb
+            ? noWebUsbMessage
+            : notSecureMessage,
+      );
+    }
+    final webUsb = access == DeviceAccess.webUsb;
     return MultiBlocListener(
       listeners: [
         BlocListener<DevicesBloc, DevicesState>(
@@ -66,21 +101,65 @@ class DevicesScreen extends StatelessWidget {
         ),
       ],
       child: Scaffold(
-        appBar: AppBar(title: const Text('Devices')),
+        appBar: AppBar(
+          title: const Text('Devices'),
+          actions: [
+            if (webUsb)
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: FilledButton.icon(
+                  key: connectPhoneKey,
+                  onPressed: () => _connectPhone(context),
+                  icon: const Icon(Icons.usb),
+                  label: const Text('Connect a phone…'),
+                ),
+              ),
+          ],
+        ),
         body: BlocBuilder<DevicesBloc, DevicesState>(
           builder: (context, state) {
-            if (state.status == TrackerStatus.noAdb) {
+            if (state.status == TrackerStatus.noAdb && !webUsb) {
               return const _NoAdb();
             }
             return Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(width: 320, child: _DeviceList(state: state)),
+                SizedBox(
+                  width: 320,
+                  child: _DeviceList(state: state, webUsb: webUsb),
+                ),
                 const VerticalDivider(width: 1),
                 Expanded(child: _DevicePanel(state: state)),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// Firefox, Safari, or a page not opened over https (design §7).
+class _NoPhoneAccess extends StatelessWidget {
+  const _NoPhoneAccess({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Devices')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.usb_off, size: 48),
+              const SizedBox(height: 12),
+              Text(message, textAlign: TextAlign.center),
+            ],
+          ),
         ),
       ),
     );
@@ -123,17 +202,25 @@ class _NoAdb extends StatelessWidget {
   }
 }
 
+enum _PhoneAction { retry, forget }
+
 class _DeviceList extends StatelessWidget {
-  const _DeviceList({required this.state});
+  const _DeviceList({required this.state, required this.webUsb});
 
   final DevicesState state;
+  final bool webUsb;
 
-  static String _stateText(AdbDevice device) => switch (device.state) {
-    DeviceState.device => 'Ready',
-    DeviceState.unauthorized => 'Accept the USB debugging prompt on the phone',
-    DeviceState.offline => 'Offline. Unplug the phone and plug it in again.',
-    DeviceState.other => device.rawState,
-  };
+  /// A WebUSB phone's note (e.g. "in use by another program") wins.
+  static String _stateText(AdbDevice device) =>
+      device.note ??
+      switch (device.state) {
+        DeviceState.device => 'Ready',
+        DeviceState.unauthorized =>
+          'Accept the USB debugging prompt on the phone',
+        DeviceState.offline =>
+          'Offline. Unplug the phone and plug it in again.',
+        DeviceState.other => device.rawState,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +229,9 @@ class _DeviceList extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
         if (state.status == TrackerStatus.starting)
-          const ListTile(title: Text('Starting adb…')),
+          ListTile(
+            title: Text(webUsb ? 'Looking for phones…' : 'Starting adb…'),
+          ),
         if (state.status == TrackerStatus.restarting)
           ListTile(
             key: const Key('devices-restarting'),
@@ -157,11 +246,14 @@ class _DeviceList extends StatelessWidget {
             },
           ),
         if (state.status == TrackerStatus.running && state.devices.isEmpty)
-          const ListTile(
-            leading: Icon(Icons.phone_android),
-            title: Text('No phone connected'),
+          ListTile(
+            leading: const Icon(Icons.phone_android),
+            title: Text(webUsb ? 'No phones yet' : 'No phone connected'),
             subtitle: Text(
-              'Connect an Android phone with USB debugging turned on.',
+              webUsb
+                  ? 'Turn on USB debugging on the phone, plug it in, then '
+                        'click Connect a phone…'
+                  : 'Connect an Android phone with USB debugging turned on.',
             ),
           ),
         for (final device in state.devices)
@@ -174,12 +266,57 @@ class _DeviceList extends StatelessWidget {
             ),
             title: Text(state.nameOf(device)),
             subtitle: Text(_stateText(device)),
+            trailing: webUsb ? _PhoneMenu(device: device) : null,
             onTap: device.isReady
                 ? () => context.read<DevicesBloc>().add(
                     DeviceSelected(device.serial),
                   )
                 : null,
           ),
+        if (webUsb)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              DevicesScreen.keyNotice,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Retry (when not ready) and Forget, for a WebUSB phone.
+class _PhoneMenu extends StatelessWidget {
+  const _PhoneMenu({required this.device});
+
+  final AdbDevice device;
+
+  Future<void> _run(BuildContext context, _PhoneAction action) async {
+    final phones = context.read<PhoneAccess>();
+    final errors = context.read<AppErrorCubit>();
+    try {
+      switch (action) {
+        case _PhoneAction.retry:
+          await phones.retry(device.serial);
+        case _PhoneAction.forget:
+          await phones.forget(device.serial);
+      }
+    } on Object catch (error) {
+      errors.report(error, context: 'Could not ${action.name} the phone');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_PhoneAction>(
+      key: DevicesScreen.deviceMenuKey(device.serial),
+      tooltip: 'Phone options',
+      onSelected: (action) => _run(context, action),
+      itemBuilder: (context) => [
+        if (!device.isReady)
+          const PopupMenuItem(value: _PhoneAction.retry, child: Text('Retry')),
+        const PopupMenuItem(value: _PhoneAction.forget, child: Text('Forget')),
       ],
     );
   }
