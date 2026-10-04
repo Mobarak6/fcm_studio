@@ -100,6 +100,12 @@ class AdbConnection {
     if (_started) {
       throw StateError('connect() was already called.');
     }
+    if (_closed) {
+      // A newer attempt already took the phone (WebUsbAdbService).
+      return Future.error(
+        const AdbException('The connection to the phone is closed.'),
+      );
+    }
     _started = true;
     _onWaitingForApproval = onWaitingForApproval;
     unawaited(_readLoop());
@@ -132,6 +138,14 @@ class AdbConnection {
     }
     await stream._opened.future;
     return stream;
+  }
+
+  /// Breaks the connection because of [reason], e.g. the phone was
+  /// unplugged: open streams fail with what that means for the user (design
+  /// §7), then the phone is released.
+  Future<void> abort(Object reason) async {
+    _fail(reason);
+    await close();
   }
 
   /// Closes every stream and releases the phone.

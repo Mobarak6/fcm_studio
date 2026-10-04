@@ -215,7 +215,7 @@ abstract interface class DeviceShell {
 **Devices screen on web:**
 - a **Connect a phone…** button;
 - empty state: "No phones yet. Turn on USB debugging on the phone, plug it in, then click **Connect a phone…**";
-- each row's menu has **Forget**, and offline or unauthorized rows also have **Retry**;
+- each row's menu has **Forget**, and rows that aren't ready (offline, unauthorized or still connecting) also have **Retry**. There is no handshake timeout, so Retry is also how a stuck "Connecting…" row is ended;
 - the hints come from §6 and §7.
 
 ## 5. Flows

@@ -5,6 +5,7 @@ import 'package:fcm_studio/features/devices/data/process_runner.dart';
 import 'package:fcm_studio/features/devices/data/webusb/usb_transport.dart';
 import 'package:fcm_studio/features/devices/data/webusb/web_usb_adb_service.dart';
 import 'package:fcm_studio/features/devices/domain/adb_device.dart';
+import 'package:fcm_studio/features/devices/domain/token_read_results.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/adb_key_fixture.dart';
@@ -192,6 +193,55 @@ void main() {
         ..add(FakeUsbPhone(vendorId: 0x18D1, productId: 0x4EE7));
       await track();
       expect(lists.last.map((d) => d.serial), [redmiSerial, 'usb:18d1:4ee7#1']);
+    },
+  );
+
+  test('two quick retries while a phone waits leave it ready', () async {
+    final phone = FakeUsbPhone(
+      adbd: FakeAdbd(trustsKey: false, approves: false),
+    );
+    source.permittedPhones.add(phone);
+    await track();
+    expect(only().state, DeviceState.unauthorized);
+    // The user taps Allow on the phone, then clicks Retry twice quickly.
+    phone.adbd = FakeAdbd();
+    await service.retry(redmiSerial);
+    await service.retry(redmiSerial);
+    await settle();
+    expect(only().state, DeviceState.device);
+    expect(only().note, isNull);
+  });
+
+  test(
+    'unplugging during a logcat read says the phone was disconnected',
+    () async {
+      const app = 'com.syldel.delivery';
+      final phone = FakeUsbPhone();
+      phone.adbd.commands
+        ..['am force-stop $app'] = const ProcessOutput(exitCode: 0)
+        ..['monkey -p $app -c android.intent.category.LAUNCHER 1'] =
+            const ProcessOutput(exitCode: 0, stdout: 'Events injected: 1\n')
+        ..['pidof $app'] = const ProcessOutput(exitCode: 0, stdout: '4242\n');
+      phone.adbd.running['logcat --pid=4242'] = StreamController<String>();
+      source.permittedPhones.add(phone);
+      await track();
+      final progress = <LogcatProgress>[];
+      final done = Completer<void>();
+      service
+          .readTokenFromLogcat(redmiSerial, app)
+          .listen(progress.add, onDone: done.complete);
+      await settle();
+      expect(progress.last, const LogcatWatching(4242));
+
+      // Chrome may deliver the disconnect event before the failed transfer.
+      source.disconnectedController.add(phone);
+      await done.future.timeout(const Duration(seconds: 2));
+      expect(
+        progress.last,
+        const LogcatFailed(
+          'The phone was disconnected. Plug it in and click Retry.',
+        ),
+      );
     },
   );
 

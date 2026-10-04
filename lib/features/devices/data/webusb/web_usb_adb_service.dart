@@ -122,7 +122,11 @@ class WebUsbAdbService implements AdbService, PhoneAccess {
 
   Future<void> _listen() async {
     _source.connected.listen(_add);
-    _source.disconnected.listen(_remove);
+    // Chrome may report the unplug before the failed transfer does, so the
+    // running reads are told the phone was disconnected (design §5).
+    _source.disconnected.listen(
+      (usb) => _remove(usb, reason: const UsbDisconnectedException()),
+    );
     for (final usb in await _source.permitted()) {
       _add(usb);
     }
@@ -167,7 +171,9 @@ class WebUsbAdbService implements AdbService, PhoneAccess {
     return 'usb:${hex(usb.vendorId)}:${hex(usb.productId)}#$_fallbackSerials';
   }
 
-  void _remove(UsbPhone usb) {
+  /// Removes the phone. With a [reason], running commands fail with what it
+  /// means (e.g. unplugged); without one (Forget) they are simply closed.
+  void _remove(UsbPhone usb, {Object? reason}) {
     final phone = _phoneFor(usb);
     if (phone == null) {
       return;
@@ -177,7 +183,7 @@ class WebUsbAdbService implements AdbService, PhoneAccess {
     final connection = phone.connection;
     phone.connection = null;
     if (connection != null) {
-      unawaited(connection.close());
+      unawaited(reason == null ? connection.close() : connection.abort(reason));
     }
     _emit();
   }
@@ -187,29 +193,17 @@ class WebUsbAdbService implements AdbService, PhoneAccess {
   Future<void> _connect(_Phone phone) async {
     final attempt = ++phone.attempt;
     bool current() => phone.attempt == attempt && _phones.contains(phone);
-    final old = phone.connection;
-    phone.connection = null;
     _set(
       phone,
       DeviceState.other,
       rawState: 'connecting',
       note: connectingNote,
     );
-    if (old != null) {
-      await old.close();
-    }
     try {
-      final transport = await phone.usb.open();
-      if (!current()) {
-        await transport.close();
+      final connection = await _openExclusively(phone, current);
+      if (connection == null) {
         return;
       }
-      final connection = AdbConnection(
-        transport: transport,
-        loadKey: _loadKey,
-        keyName: _keyName,
-      );
-      phone.connection = connection;
       unawaited(
         connection.lost.then((error) {
           if (current()) {
@@ -251,6 +245,41 @@ class WebUsbAdbService implements AdbService, PhoneAccess {
       if (current()) {
         _set(phone, DeviceState.offline, note: connectionFailureMessage(error));
       }
+    }
+  }
+
+  /// Closes the phone's previous connection and opens a new one, one
+  /// attempt at a time: a superseded attempt never opens, or closes, the
+  /// device under a newer one. Null when a newer attempt took over.
+  Future<AdbConnection?> _openExclusively(
+    _Phone phone,
+    bool Function() current,
+  ) async {
+    final previous = phone.usbTurn;
+    final turn = Completer<void>();
+    phone.usbTurn = turn.future;
+    try {
+      await previous;
+      final old = phone.connection;
+      phone.connection = null;
+      if (old != null) {
+        await old.close();
+      }
+      if (!current()) {
+        return null;
+      }
+      final transport = await phone.usb.open();
+      if (!current()) {
+        await transport.close();
+        return null;
+      }
+      return phone.connection = AdbConnection(
+        transport: transport,
+        loadKey: _loadKey,
+        keyName: _keyName,
+      );
+    } finally {
+      turn.complete();
     }
   }
 
@@ -310,4 +339,7 @@ class _Phone {
 
   /// Bumped by every connect and by removal; older attempts stop.
   int attempt = 0;
+
+  /// The latest attempt's open (or close) of the device; the next waits.
+  Future<void> usbTurn = Future<void>.value();
 }
