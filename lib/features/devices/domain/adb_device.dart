@@ -12,6 +12,7 @@ class AdbDevice extends Equatable {
     this.model,
     this.product,
     this.transportId,
+    this.note,
   });
 
   final String serial;
@@ -22,6 +23,10 @@ class AdbDevice extends Equatable {
   final String? model;
   final String? product;
   final String? transportId;
+
+  /// Why the phone isn't ready, shown instead of the default hint (on the
+  /// web, e.g. "Connecting…" or "in use by another program").
+  final String? note;
 
   /// Only a device in the `device` state accepts commands.
   bool get isReady => state == DeviceState.device;
@@ -34,6 +39,7 @@ class AdbDevice extends Equatable {
     model,
     product,
     transportId,
+    note,
   ];
 }
 
