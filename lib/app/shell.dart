@@ -17,13 +17,15 @@ class AppShell extends StatelessWidget {
   static const logoAsset = 'assets/branding/mark.png';
   static const logoKey = Key('app-logo');
 
-  /// The rail's sections, in order. The adb screens need a desktop (spec §3.1).
+  /// The rail's sections, in order. Devices is always there: on the web it
+  /// explains when the browser can't reach phones. Settings holds the adb
+  /// path, so it is desktop only (spec §3.1; WebUSB design §4.9).
   static List<AppSection> sectionsFor(PlatformFeatures platform) => [
     AppSection.composer,
     AppSection.presets,
     AppSection.targets,
     AppSection.history,
-    if (platform.canRunAdb) AppSection.devices,
+    AppSection.devices,
     if (platform.canRunAdb) AppSection.settings,
   ];
 

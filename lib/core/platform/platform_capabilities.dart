@@ -1,11 +1,17 @@
-import 'package:flutter/foundation.dart';
+import 'package:fcm_studio/core/platform/device_access.dart';
 
-/// What this platform can do (spec §3.1). The device features need a
-/// desktop: browsers can't run adb.
+export 'package:fcm_studio/core/platform/device_access.dart';
+
+/// What this platform can do (spec §3.1; WebUSB design §4.9).
 class PlatformFeatures {
-  const PlatformFeatures({required this.canRunAdb});
+  const PlatformFeatures({required this.deviceAccess});
 
-  static const PlatformFeatures current = PlatformFeatures(canRunAdb: !kIsWeb);
+  final DeviceAccess deviceAccess;
 
-  final bool canRunAdb;
+  /// Desktop: adb runs, and its path is set in Settings.
+  bool get canRunAdb => deviceAccess == DeviceAccess.adb;
+
+  /// Phones can be read: adb on desktop, WebUSB in Chromium browsers.
+  bool get canReadPhones =>
+      deviceAccess == DeviceAccess.adb || deviceAccess == DeviceAccess.webUsb;
 }

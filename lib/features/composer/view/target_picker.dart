@@ -110,7 +110,7 @@ class _TargetPickerState extends State<TargetPicker> {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
-              if (context.read<PlatformFeatures>().canRunAdb)
+              if (context.read<PlatformFeatures>().canReadPhones)
                 TextButton.icon(
                   key: TargetPicker.fromDeviceKey,
                   onPressed: () =>

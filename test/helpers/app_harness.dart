@@ -7,6 +7,7 @@ import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/core/storage/app_database.dart';
 import 'package:fcm_studio/core/storage/secret_store.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
+import 'package:fcm_studio/features/devices/data/phone_access.dart';
 import 'package:fcm_studio/features/devices/data/process_runner.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:fcm_studio/features/projects/view/project_switcher.dart';
@@ -36,7 +37,10 @@ Future<AppDependencies> buildTestDependencies(
   ProcessRunner? processRunner,
   Map<String, String>? environment,
   FakeAdbService? adb,
-  PlatformFeatures platform = const PlatformFeatures(canRunAdb: true),
+  PlatformFeatures platform = const PlatformFeatures(
+    deviceAccess: DeviceAccess.adb,
+  ),
+  PhoneAccess? phoneAccess,
   GoogleAuthFlow? googleFlow,
   GoogleUserInfo? googleUserInfo,
 }) async {
@@ -61,6 +65,7 @@ Future<AppDependencies> buildTestDependencies(
         (adb == null ? const {} : const {'ANDROID_HOME': '/fake/sdk'}),
     isWindows: false,
     adbServiceFor: adb == null ? null : (_) => adb,
+    phoneAccess: phoneAccess,
     googleFlow: googleFlow,
     // No test ever asks Google which account signed in.
     googleUserInfo: googleUserInfo ?? FakeGoogleUserInfo(),

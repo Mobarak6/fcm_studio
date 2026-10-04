@@ -110,7 +110,7 @@ void main() {
       tester,
       await buildTestDependencies(
         tester,
-        platform: const PlatformFeatures(canRunAdb: false),
+        platform: const PlatformFeatures(deviceAccess: DeviceAccess.noWebUsb),
       ),
     );
     expect(find.byKey(const Key('nav-settings')), findsNothing);

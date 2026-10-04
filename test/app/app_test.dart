@@ -6,6 +6,7 @@ import 'package:fcm_studio/app/shell.dart';
 import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/features/composer/view/target_picker.dart';
 import 'package:fcm_studio/features/devices/bloc/devices_bloc.dart';
+import 'package:fcm_studio/features/devices/data/webusb/web_usb_adb_service.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/app_harness.dart';
 import '../helpers/fake_adb_service.dart';
+import '../helpers/fake_phone_access.dart';
 import '../helpers/fake_process_runner.dart';
 import '../helpers/service_account_fixture.dart';
 
@@ -114,7 +116,7 @@ void main() {
       await buildTestDependencies(
         tester,
         processRunner: runner,
-        platform: const PlatformFeatures(canRunAdb: false),
+        platform: const PlatformFeatures(deviceAccess: DeviceAccess.noWebUsb),
       ),
     );
     expect(readCubit<AdbSetupCubit>(tester).state.status, AdbStatus.unknown);
@@ -132,18 +134,47 @@ void main() {
     expect(adb.trackers.last.hasListener, isFalse);
   });
 
-  testWidgets('on the web there are no device entry points', (tester) async {
+  testWidgets('without WebUSB, Devices stays but From device is hidden', (
+    tester,
+  ) async {
     await pumpApp(
       tester,
       await buildTestDependencies(
         tester,
-        platform: const PlatformFeatures(canRunAdb: false),
+        platform: const PlatformFeatures(deviceAccess: DeviceAccess.noWebUsb),
       ),
     );
     await addTestProject(tester);
     // The composer is on screen, so the target picker is built.
     expect(find.text('Target'), findsOneWidget);
-    expect(find.byKey(const Key('nav-devices')), findsNothing);
+    expect(find.byKey(const Key('nav-devices')), findsOneWidget);
+    expect(find.byKey(const Key('nav-settings')), findsNothing);
     expect(find.byKey(TargetPicker.fromDeviceKey), findsNothing);
   });
+
+  testWidgets(
+    'with WebUSB, phones are tracked at once and Settings is hidden',
+    (tester) async {
+      final adb = FakeAdbService();
+      await pumpApp(
+        tester,
+        await buildTestDependencies(
+          tester,
+          adb: adb,
+          platform: const PlatformFeatures(deviceAccess: DeviceAccess.webUsb),
+          phoneAccess: FakePhoneAccess(),
+        ),
+      );
+      expect(adb.trackers, hasLength(1));
+      expect(
+        readCubit<DevicesBloc>(tester).state.adbPath,
+        WebUsbAdbService.source,
+      );
+      expect(readCubit<AdbSetupCubit>(tester).state.status, AdbStatus.unknown);
+      expect(find.byKey(const Key('nav-devices')), findsOneWidget);
+      expect(find.byKey(const Key('nav-settings')), findsNothing);
+      await addTestProject(tester);
+      expect(find.byKey(TargetPicker.fromDeviceKey), findsOneWidget);
+    },
+  );
 }

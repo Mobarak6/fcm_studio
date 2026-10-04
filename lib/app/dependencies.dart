@@ -12,9 +12,13 @@ import 'package:fcm_studio/core/utils/clock.dart';
 import 'package:fcm_studio/features/composer/data/message_sender.dart';
 import 'package:fcm_studio/features/devices/data/adb_locator.dart';
 import 'package:fcm_studio/features/devices/data/adb_service.dart';
+import 'package:fcm_studio/features/devices/data/phone_access.dart';
 import 'package:fcm_studio/features/devices/data/process_runner.dart';
 import 'package:fcm_studio/features/devices/data/process_runner_platform.dart';
 import 'package:fcm_studio/features/devices/data/recent_packages_repository.dart';
+import 'package:fcm_studio/features/devices/data/webusb/adb_key_store.dart';
+import 'package:fcm_studio/features/devices/data/webusb/web_usb_adb_service.dart';
+import 'package:fcm_studio/features/devices/data/webusb/webusb_platform.dart';
 import 'package:fcm_studio/features/history/data/history_repository.dart';
 import 'package:fcm_studio/features/presets/data/presets_repository.dart';
 import 'package:fcm_studio/features/projects/data/project_auth_registry.dart';
@@ -34,14 +38,33 @@ class AppDependencies {
     Clock clock = const SystemClock(),
     FileAccess files = const PlatformFileAccess(),
     Future<String> Function()? loadBuiltInPresets,
-    PlatformFeatures platform = PlatformFeatures.current,
+    PlatformFeatures? platform,
     ProcessRunner? processRunner,
     Map<String, String>? environment,
     bool? isWindows,
     AdbService Function(String adbPath)? adbServiceFor,
+    PhoneAccess? phoneAccess,
     GoogleAuthFlow? googleFlow,
     GoogleUserInfo? googleUserInfo,
   }) {
+    final features =
+        platform ??
+        PlatformFeatures(
+          deviceAccess: kIsWeb ? browserDeviceAccess() : DeviceAccess.adb,
+        );
+    // The web build's phones (WebUSB design §4.8). Tests pass their own.
+    final webUsb =
+        features.deviceAccess == DeviceAccess.webUsb && adbServiceFor == null
+        ? WebUsbAdbService(
+            source: createUsbPhoneSource(),
+            loadKey: AdbKeyStore(
+              secrets: secrets,
+              generateJwk: generateAdbKeyJwk,
+            ).load,
+            keyName: adbKeyName(),
+            isWindows: defaultTargetPlatform == TargetPlatform.windows,
+          )
+        : null;
     final projectsRepository = ProjectsRepository(
       database: database,
       secrets: secrets,
@@ -61,7 +84,7 @@ class AppDependencies {
       database: database,
       clock: clock,
       files: files,
-      platform: platform,
+      platform: features,
       projectsRepository: projectsRepository,
       authRegistry: authRegistry,
       firebaseProjectsApi: FirebaseProjectsApi(httpClient: httpClient),
@@ -89,7 +112,11 @@ class AppDependencies {
       ),
       adbServiceFor:
           adbServiceFor ??
-          (path) => ProcessAdbService(runner: runner, adbPath: path),
+          switch (webUsb) {
+            final service? => (_) => service,
+            null => (path) => ProcessAdbService(runner: runner, adbPath: path),
+          },
+      phoneAccess: phoneAccess ?? webUsb,
     );
   }
 
@@ -110,6 +137,7 @@ class AppDependencies {
     required this.recentPackagesRepository,
     required this.adbLocator,
     required this.adbServiceFor,
+    required this.phoneAccess,
   });
 
   static Future<AppDependencies> create() async {
@@ -147,4 +175,7 @@ class AppDependencies {
   final RecentPackagesRepository recentPackagesRepository;
   final AdbLocator adbLocator;
   final AdbService Function(String adbPath) adbServiceFor;
+
+  /// Connect, Retry and Forget for the web's phones; null on desktop.
+  final PhoneAccess? phoneAccess;
 }

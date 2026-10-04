@@ -11,6 +11,8 @@ import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/devices/bloc/devices_bloc.dart';
 import 'package:fcm_studio/features/devices/cubit/token_reader_cubit.dart';
+import 'package:fcm_studio/features/devices/data/phone_access.dart';
+import 'package:fcm_studio/features/devices/data/webusb/web_usb_adb_service.dart';
 import 'package:fcm_studio/features/history/cubit/history_cubit.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
@@ -37,6 +39,8 @@ class FcmStudioApp extends StatelessWidget {
         RepositoryProvider<PlatformFeatures>.value(
           value: dependencies.platform,
         ),
+        if (dependencies.phoneAccess case final phoneAccess?)
+          RepositoryProvider<PhoneAccess>.value(value: phoneAccess),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -92,7 +96,15 @@ class FcmStudioApp extends StatelessWidget {
           ),
           BlocProvider(
             lazy: false,
-            create: (_) => DevicesBloc(serviceFor: dependencies.adbServiceFor),
+            create: (_) {
+              final bloc = DevicesBloc(serviceFor: dependencies.adbServiceFor);
+              // There is no adb to find on the web: WebUSB phones are
+              // tracked at once (WebUSB design §4.9).
+              if (dependencies.platform.deviceAccess == DeviceAccess.webUsb) {
+                bloc.add(const DevicesAdbChanged(WebUsbAdbService.source));
+              }
+              return bloc;
+            },
           ),
           BlocProvider(
             create: (_) => TokenReaderCubit(
