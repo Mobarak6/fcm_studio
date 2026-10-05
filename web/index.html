@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,6 +18,8 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <!-- Flutter replaces this with its own once it starts. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Send Firebase Cloud Messaging pushes while you build your app.">
 
   <!-- iOS meta tags & icons -->
@@ -31,8 +33,100 @@
 
   <title>FCM Studio</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* The app's surface colors (AppTheme, Material 3 from #1F8AFD), so the
+       loading screen hands over to the app without a flash. */
+    :root {
+      color-scheme: light dark;
+      --surface: #f9f9ff;
+      --on-surface: #191c20;
+      --primary: #3f5f90;
+      --track: #e1e2e9;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --surface: #111318;
+        --on-surface: #e1e2e9;
+        --primary: #a8c8ff;
+        --track: #33353a;
+      }
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--surface);
+    }
+    #loading {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      color: var(--on-surface);
+      font: 600 18px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      transition: opacity 200ms ease-out;
+    }
+    #loading.done {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #loading .logo {
+      width: 72px;
+      height: 72px;
+    }
+    #loading .name {
+      margin-top: 16px;
+    }
+    #loading .track {
+      position: relative;
+      width: 160px;
+      height: 4px;
+      margin-top: 24px;
+      overflow: hidden;
+      border-radius: 2px;
+      background: var(--track);
+    }
+    /* Indeterminate: a segment that keeps sliding across. */
+    #loading .bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 40%;
+      border-radius: 2px;
+      background: var(--primary);
+      animation: slide 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    @keyframes slide {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(250%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #loading { transition: none; }
+      #loading .bar { animation: none; width: 100%; opacity: 0.6; }
+    }
+  </style>
 </head>
 <body>
+  <!-- Shown until Flutter draws its first frame. Everything it needs is in
+       this file, so it appears at once. -->
+  <div id="loading">
+    <img class="logo" width="72" height="72" alt=""
+         src="data:image/webp;base64,UklGRmoQAABXRUJQVlA4WAoAAAAQAAAAjwAAjwAAQUxQSPsBAAABkCPbtutE572rH+Njiol4PwCKWCliLBSRad8dAZNob0bgbew7wz1zquSl0jthExEKAyBpQG3XA8EB6IfODMDYfOPOk8//AkeM4d/nJ3ca82MAzByGQwMwVz/9fs4R5vn30/ocABsGPFBtnfxgkzGmPIrIKUY2+eNkqwL8oHAetvOKZOi6NqJLgeSrHYN3g55aetK6N7MA5ta1T5YGO1TDzFFiiiyGMTEdzaA2wLalt8yRRTFmvl2Cd/3m7gVDZmHMgRe7/YWH2ycTC2Qi910fzzpXe8jrzCKZr/mw5np1nflHDCyWgY+89QjDQStLjgNYj1f3et5f4PV7XR/1WDiPzSw64vkCfJcHxz8xsXAmfhrvfM9wyMjiGXkI68j52EwBEefbw1cvmBQg8UXl29rtVmqIbRicr97kqAExv6m8M6znRBFMeR1mOGNUgcgzGGZ/M6tA5u9ZuHqr1dHUXftYyXD8e2usY/h9fOGCUnix0GBSgsTG7daKkoXbj9WUx5+ZlSDz8z81+BcohnKSvPEfN/7jf9QIclLPP3A9/+T16Aj06Cz06FD06HT06Jjk6LwE6eD06AT16Cj16Ez16HDl6JTl6Lj16Nzl+ADo8UmQ4yMhx2dDjg+JHp8WOT42cnx+5PggyfGJUuOjJcdnTI4PmxqfOn0+fnJ8DgEAVlA4IEgOAACwOwCdASqQAJAAPjEWiUMiISEVWmTQIAMEsQbe+iAZ/St47/mfyq9pqxP1/8MflV12Brey79l9uPwY/y3sQ/TH+19wD9Nf9d+Y39p7mv7aeof9ZP+j/nPdp/vX7Ae73+5/33/Re4B/Lf7P1kXoEfsr6Y/7hfBr+2X7h/Al+wv/h6wDPH/yfSe+c/cDQO/kP3X+/flf/Yf3I6A+AF+LfyX/FflF+V3MLgC+n/+q+3bnp+XL3AP1G/vfk4eFd5x7Af5c/1P9l/LT44v9L/If4f90Pb1+cf43/re4X/L/6V/u/7j+6n7//WR7KPRi/Z41KH+Cjc2XLSp7KMeO91yIec87XDxbFLXGLmKmJnrSD18IudDttu5q8p2VYxnHR66VD0w4StO4+eM6fJjxgG9BB70B42ZM7BES9nfaR0K8sefLr3CNP65kygdatqMxOpuJpbTwcwC9sSgmE92KUMlFodkHhr9507Z8iud2iRK0SnpGSO85ZK7a5ZtnOZTJe3uT6DwfDOfjWAiibzCKHHsRfBqlRWKKNqRtUncITBg0FY92bHE0GPvkFaSnuV/J5P8HlROQZkWYfsTq/RNLW/wLawI3ZG7y7dFsDIVRuTAIwxHuXxnoB7hneXdLjofmKFdqJyA9WnyybwAA/v7Dv/7T/Bx+ii2xLqDZPOr+p1op46cOIVJPuvijqF7Gl3LTOmDdVud9AtV5kr4fR4Gp4iPGYC7gMe1kIEyBEEAilIxGmEp5avDMvWLZ2dKDaHrDMOuiu9IoAADIeULKSayWJ4jPjeBDkjCQQb96vSqigzO9idLZML7210XAP+7ZYuWBPLtJkOvQrjocGpKZhiMPrD4R79FCNkZEPufl0EMC3VaRfan2EusFzzsY516xuPDqS8a9zdhNFJVgoPGEcicejF+7N5uADS9Ngg25RVcD34+nHFo8JZnT117qa6m+B5JGkOpw3xwuNGY1JrCDgN5zcQl+SZxDQN5Ehk3ujK5lb3+auZxpVzeAoMvOWgr6R5rzzVbcfV/12dvbriVs80NUIAMZBeHkuDkPoB/p9nP5bR5K9ROFiwqqVZ4ud/wAMeecXZt76e/k1Ja/Zb/B8L/+Z/eqR99nP4X7Pb0k1WPgBOKx31eOJfaUX5/gqa7/fSM67rn5E9Fn/qwnXZcHkLJG1s5y4kBCQomop4mZBW2jVUBw/s17X2RTFc4MO0fi0qKGnqtx6OVE//yqx59H8guHv2U5rXUPABdL4EWxLmiKiuz4KYE4A9F+fTIWtCN3zh7nHoMq2l//4mFz8Q/PglwlMed2Mz5/k2+DQa9QzPg0ybtDOgx2ktRdNmUWjwesQqhxPR6VGnB/DNgKg+02G6Yl4V9iOy/NM2GseT8Tc+2/ad5tYl4csR9dto1LmiI3z+4T8Pulc1BgcD4TRi4BpABoeKy02xpEFNODf73F66Dq3BIa6OD8QgRlsQfokgHt51eYQlLQLqnhrPsh/1p2SDNzdjV3gSLFX5pPZtl3QC9x5J06syojDiNHWSjt8DtLQuFmcaEYa1iUCYhxpU0AHo7+YxBitHE9K1uvX13gNRM9YotfgRBrMppPio6MfJ0FXSzGgI0xkGoQW+oeb2XE41z6iYbKQHUONxEbkUxFsHsKmSkvZI9hTqpjzN5ui2fwJrE8IR7SVLgJkmmR2N5g+hP3ECZaoSvizfIwUzKCjtnSvP8KylkZJ7u8RkO3HgVH9DEyxg5eSAU+EBSTmSYuMODdTxvRrHwZIqXjnj0/ITw6ZVEWUhJC0RjcQg9ssX35LwU0GSmVgZutOFym5b85rynoSy9oZMmrbj0SUpHF99/yBb6S5MgA6wwPXzqMF1Fu0F0a321b76e0KJDpO4c5PU9QBLuQYUtSGipzUfnPXYVkbapLMV2Kz1mWXvAVf9e9HoNcPBgyquq2q1taF4dnHM7pwyDPNUzCKTh+YjAnoM9CH6oy8j+5+r28z/+3/wT5JZyv4Eudds3XHlGk3nmH5mjzMT5hzHq1e4p0y/bKTNwNo8b7Rdgu84I7mMRAmUMjfZnJGzjiX9P21aNpKNgaU5v9JXKLCc5tsmhNKDiOKZsOjoN0PEd9nN+e7IagJIvpEx5v6tVPFZKO/UH1Lo/6RyTTRREDK1fbFqandqRM+yYWasKLnpPI2j4Zm2kThbG4FgQYCUcYD2hu6qUUpTf/CDu66Sp0HyfCGq6H7v6AvbY1VQhH7biQzyIGGpOpySJdtx3LakLMWkPR0DFTKffXxvTUgvUfHIdRfLvLVCQ4znQhCbOz9cIkb0W2iusxCWUcmTgOqGchtZCp2zkmVKtAaSSu9uM/7iK/pJSpOCgGf7gBFDa1KDIt9dUjzCym019HLRi0Tfzt5pIRamerK7m/GcmF/Ns3/QqdAwyJ+EyXQLLFQ1hRIStObJyX12Jn+B3cZNj494naHY1/Sir50FeQpBSCiCsQRRE3vp3t7WmyLTO2qRiNvUk+ctgeosWjWZ/z5mQhimXFz+3hz0wo4m4BRAgjaatYneTZ+Vu2CffDba173uv9D/ehGuq4CQVmzvZOlpp8iF3g3RmJypk4rXvfwfzgK9KPNNpsN9TiGhE1+b5P/6FichBQYRV+7xLz+fodagpVH0LyygVd5hCAbVgIjroaqAZ7NwuPa7rVMzxKR4DEhCA6n48DqZ8wvPjBh4LAdirwQhaJJS+HiXVJRHmPulHxZpK56FuAnJQ3EbS56PubIApUBFHRgadkawZnAXCn+J8pym8PaLpR3pdjyPF6z9miritGRF9CD/9XOt9hErM/YwbBRIoBUSx0d4ZthgBIctvS6qiQuRxR33o+LTxR/r5h4YHBpgQHc40GYW4JSQgbRnucGzkgj3A0UFQmPLVab8dWdRtBXqHK5UsDrlmsMgKRn199RizlhMfFBuknHXPbYsg/eLK4z0P1SqAp29fray7Hfar2XkJZ4tHU0Q53Eck6/UneprLMmzo8Hnc6Ivs2B4C8YoZ60BGzTS2EcXLNoU/820gtnakj7ac4hbE2ArwBWd9cow8SCnNNM+uhT75xg4mh1v6/G/PJ53mBRPzVdLQ/7cVxfUTAG3oehOEPDKJeG5cmMl/abQPVu5FOuGrXiC/V81fVkYuUrCNaXnDJKnYXKWIPT/0r7ues9fLsyfTLBWppIW9p030FfFbxdonk0/Ut7cKqpmjvW0fFeHA8xUH2yC0xKrdQM4e0+dSrs/EGxhI9HAYsjkUgxSCtMxILnxThivtcmIQBcKluFNHX/04UYwKUz8sYC149WoOtQKD6Oxa5xaZt796/rj9aM/AbZFKh73sOymo4bhc/Xk4ELmr0yYL6jgG7/Gdau71mm2TE4wmJIfqWG1xoGLxhl9XLZsnNqA4A7tZxc/hm+PvwdpOVaNwOcVxD6qjIKQmiYKF2jKY2B2aEua/XRGdCqQJyMMh2o5MvfhqB+bHwvkz632QfjfAFbhgNvBn3+Xe2pcmyDIOOA9a2ZEe7+t76rTzSOsKrlI/k/8w1MfGm/Iag+/LuxirvwlVFjca747YlpodgMKRTfwXyHRJuttFRY5uA7l1/suZkwGgqNDyBGXykSR0agljxt1pX6q1b59EAcWvHJF4IzrBzXNMO9HSF+a/s9Fef6pgeWTjkf2D6WJ659uGoN7hdUPGMVFWAq2O2O/U1B7bNWFIAje8G3O3/MwZV9JYmLbU/TIgf6D0xWJ1QyQ169fpHYvAJvZ4lN5a+Cv7oIFqDcxcOertU2EuHzRyf3N6IcAVW7UTY4wH/HZgooepv2jfQTaQHRptOhQsDMik6nZTmHkxRnaUAtVNP2Mlj0JP4yFAFGCyTGjwWsI13VGJoUD3b18s0gydRAXfRba9ACm2MgNPwUTySnXJoZbml0Zdmi/ZF3wXuhCFMVtnrfQgs+Tf3HSbYkTK0Gzv0xLnqMsTqJMCodQNLhH9c9G9VliQJvEe6oUhSOXxSshyvDCIpKBRPbt6TUrU+e+iXcx++tqxEMJAnc4Ov1QbKuAc9E7xET72+V8eENhpufW5YD4YxALOjwgWKDpwkGjtOy0RgF6sAPVBeX7XMpm/eqDxb8j/IhJToHzx/BslvAXkaVFVN2KwLWPt9LngF6YTlQSMGoNlikaeAysJ72h9zHEWJz5zkvNCJBqkZWBIMTo49aSOMWEDmJnMPPWCx5yVHXO2X2zOZCebomqsKjjZhcfDV0eUDpiQ6Kxxyno/7DzMi+pZozBNNg3XOky30r8WzePlY3L6VA4apPD6+A3E9H9gMzei1QoL0LyPzkszbWzLBnDQ5p/rLezUdESijzetYtgx5rvDCesmzAOpBsgtVLAV23VxnsrlceHaYz6Q7+xEgAJVgKZ6U+0W1TlSJnpmZ/qdYF3whKThQheRjjZdKuyBYqQZRHmgvXhb204yvRTMt5KF8Z/0G9UzlifERTfP3CXfKvIPfuFhLf9tsE1+6gypXdRLD/NoSjEYORkZv+s9fHl9h5T3/9ivIbQQXUFHUwT3jUjL2CRfePftvlufIuACe4T/+SxUuYG8VhcZEiRIW70iidx7kSKxlKHUQiMlS1T67d1UQ0bWyUqrQkqcgmyWc6nl1aQBRzNzxXMaZgfRNrStm7P0Qa/6xIkMwADviN1imRgRuXLDUIAqWssKgJ4IkmM0LkWHKGPOSxqJAj4+Z1H0rzxneiJuYmuddXKxwyTmJatWQU2pC6n6vDgNJAtXq/XPczdnCRqabgRmPoNnFNpwiCemMWmG7I/dvCKYeiPGF60sD7wtjBGhiCytJMeCi76NwK8wV3AIFl6tFZrtB8x0yhiFejsHmCTKtQC+zrbuvvSW1jmZcwFFoShLN6KvM11+Z3WczjfSVIBG822eNtCQ60GS/zjBc0WB6i7QAAA==">
+    <div class="name">FCM Studio</div>
+    <div class="track" role="progressbar" aria-label="Loading FCM Studio">
+      <div class="bar"></div>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', () => {
+      const loading = document.getElementById('loading');
+      loading.classList.add('done');
+      setTimeout(() => loading.remove(), 250);
+    }, { once: true });
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
