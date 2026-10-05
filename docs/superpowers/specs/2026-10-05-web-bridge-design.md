@@ -40,7 +40,7 @@ These were made in chat on 2026-10-05.
   - **Connect a phone (USB)** and **Bridge** are always shown.
   - Once the bridge has connected in a browser, the page connects to it automatically on later visits, and keeps trying while it's not running.
   - On a page served from localhost, it connects automatically from the start.
-- **Only FCM Studio may use the bridge:** an Origin allow-list of localhost, `--allow-origin` values, and a hosted-origins list in the file. That list is empty until the hosting URL is decided.
+- **Only FCM Studio may use the bridge:** an Origin allow-list of localhost, `--allow-origin` values, and a hosted-origins list in the file (`https://fcm-studio-oauth.web.app`).
 - **The bridge listens on `127.0.0.1:15037` only.** It's easy to remember: adb uses 5037.
 - **Desktop is unchanged.**
 
@@ -144,7 +144,7 @@ It starts the process with an argument list, never through a shell on the comput
 2. **Origin allow-list:** the WebSocket upgrade must carry an `Origin` header that is one of:
    - `http://localhost:<any port>` or `http://127.0.0.1:<any port>`;
    - an origin given with `--allow-origin`;
-   - an entry in the file's `hostedOrigins` constant (empty until the hosting URL is decided).
+   - an entry in the file's `hostedOrigins` constant (`https://fcm-studio-oauth.web.app`).
 
    Any other origin, or a missing `Origin`, gets `403`, and the terminal prints:
    ```
@@ -346,7 +346,7 @@ Each result is recorded in §3 and in the main spec's M5.1 status.
 
 ## 10. Out of scope
 
-- **The hosting URL:** it goes into `hostedOrigins` (one line) once it's decided; until then, use `--allow-origin`.
+- **The hosting URL:** decided: `https://fcm-studio-oauth.web.app` is in `hostedOrigins`. Any other address uses `--allow-origin`.
 - Compiled bridge programs, signing, a tray app or auto-start.
 - Reaching phones on another computer.
 - Wireless debugging pairing.

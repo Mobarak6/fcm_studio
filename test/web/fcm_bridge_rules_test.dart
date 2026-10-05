@@ -65,8 +65,17 @@ void main() {
     }
   });
 
-  test('origins: localhost pages, --allow-origin, nothing else', () {
+  test('origins: localhost pages, --allow-origin, the hosted page, nothing '
+      'else', () {
     expect(isAllowedOrigin('http://localhost:5050', const []), isTrue);
+    expect(
+      isAllowedOrigin('https://fcm-studio-oauth.web.app', const []),
+      isTrue,
+    );
+    expect(
+      isAllowedOrigin('http://fcm-studio-oauth.web.app', const []),
+      isFalse,
+    );
     expect(isAllowedOrigin('http://127.0.0.1:8080', const []), isTrue);
     expect(isAllowedOrigin('http://localhost', const []), isTrue);
     expect(isAllowedOrigin('https://localhost:5050', const []), isFalse);

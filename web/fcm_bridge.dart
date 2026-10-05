@@ -22,9 +22,8 @@ const bridgeProtocol = 1;
 /// adb's own port is 5037.
 const bridgePort = 15037;
 
-/// The hosted FCM Studio addresses. Empty until the hosting URL is decided;
-/// until then, use --allow-origin.
-const hostedOrigins = <String>[];
+/// The hosted FCM Studio addresses. Any other address needs --allow-origin.
+const hostedOrigins = <String>['https://fcm-studio-oauth.web.app'];
 
 /// Sent in `hello` and printed when adb wasn't found.
 const noAdbProblem =
