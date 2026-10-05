@@ -206,6 +206,17 @@ void main() {
     },
   );
 
+  testWidgets('a bridge from another version offers Download and Try again', (
+    tester,
+  ) async {
+    await openDevices(tester);
+    await bridgeIs(tester, const BridgeWrongVersion(2));
+    expect(find.byKey(DevicesScreen.bridgeDownloadKey), findsOneWidget);
+    await tester.tap(find.byKey(DevicesScreen.bridgeRetryKey));
+    await tester.pump();
+    expect(bridge.connects, 1);
+  });
+
   testWidgets('Copy and Download help start the bridge', (tester) async {
     final copied = mockClipboard(tester);
     await openDevices(tester);

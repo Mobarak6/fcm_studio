@@ -339,7 +339,7 @@ class _BridgeBar extends StatelessWidget {
       BridgeWrongVersion(:final bridgeProtocol) => (
         Icons.error_outline,
         DevicesScreen.bridgeWrongVersionText(bridgeProtocol),
-        <Widget>[download],
+        <Widget>[download, retry],
       ),
       BridgeNoAdb(:final problem) => (
         Icons.error_outline,
