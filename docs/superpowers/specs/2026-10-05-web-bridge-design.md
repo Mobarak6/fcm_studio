@@ -175,8 +175,8 @@ It starts the process with an argument list, never through a shell on the comput
 
 All files are in `lib/features/devices/data/bridge/`.
 
-**`BridgeChannel`** is a WebSocket behind an interface (`Stream<String> messages`, `send`, `close`, plus a `done` future).
-- `browser/web_bridge_channel.dart` uses `package:web`'s `WebSocket`. It's chosen by a conditional export, as with `webusb_platform.dart`; the VM gets a stub.
+**`BridgeChannel`** is a WebSocket behind an interface (`Stream<String> messages`, which ends when the connection closes, plus `send` and `close`).
+- `browser/bridge_platform_web.dart` uses `package:web`'s `WebSocket`. It also checks Local Network Access, tells whether the page is local, and downloads the bridge file. It's chosen by a conditional export (`bridge_platform.dart`), as with `webusb_platform.dart`; the VM gets a stub.
 - Tests use an in-memory fake, and a `dart:io` WebSocket for the end-to-end test.
 
 **`BridgeClient`** owns the connection.
@@ -196,6 +196,7 @@ All files are in `lib/features/devices/data/bridge/`.
 
 **`BridgeDeviceShell implements DeviceShell`:**
 - `run` sends `run`, collects stdout and stderr until `exit`, and returns `ProcessOutput`. It decodes UTF-8 the same way `ProcessRunner` does.
+- Like desktop, `run` gives up after 10 s (`ProcessRunner.defaultTimeout`): it sends `kill` and throws `` `adb -s <serial> …` (through the bridge) did not finish within 10 seconds ``.
 - `start` returns a `RunningProcess` whose stdout is the decoded byte chunks; `kill()` sends `kill`.
 - `describe` gives `` `adb -s <serial> shell …` (through the bridge) ``.
 - An `error` reply becomes `AdbException(message)`.
@@ -277,7 +278,7 @@ The read fails with "The bridge stopped." The bridge rows disappear, and the lin
 | `connecting` | Bridge: connecting… | — |
 | `connected(adb)` | Bridge: connected · adb: `<path>` | **Disconnect** |
 | `notRunning` | The bridge isn't running. In the folder where you saved it, run `dart fcm_bridge.dart`. If it's running, its window says why it refused this page. | **Copy**, **Download fcm_bridge.dart**, **Try again** |
-| `wrongVersion(n)` | This fcm_bridge.dart doesn't match this page (bridge protocol n, page 1). Download it again and restart it. | **Download fcm_bridge.dart** |
+| `wrongVersion(n)` | This fcm_bridge.dart doesn't match this page (bridge protocol n, page 1). Download it again and restart it. | **Download fcm_bridge.dart**, **Try again** |
 | `noAdb(problem)` | `problem` from `hello` | **Try again** |
 | `blocked` | The browser is blocking this site from reaching apps on this computer. Allow it in the site settings (the icon left of the address), then try again. | **Try again** |
 
@@ -295,6 +296,7 @@ The read fails with "The bridge stopped." The bridge rows disappear, and the lin
 | A command is refused (only possible with a mismatched file) | The read's error: "`adb -s <serial> shell …` (through the bridge) failed: fcm_bridge refused this command." |
 | The connection drops mid-command | "The bridge stopped." on the read; `notRunning` on the line |
 | adb's own failures (device offline, `run-as` denied, …) | Unchanged: exit code and stderr reach `AdbCommands` exactly as on desktop |
+| A command doesn't finish within 10 s | The read's error: "`adb -s <serial> …` (through the bridge) did not finish within 10 seconds"; the bridge kills it |
 | Port 15037 taken when the bridge starts | Terminal only: "Port 15037 is in use; is another bridge already running?" |
 
 ## 8. Testing

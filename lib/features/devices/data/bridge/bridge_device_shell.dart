@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -9,9 +10,15 @@ import 'package:fcm_studio/features/devices/data/process_runner.dart';
 /// Runs phone commands with the computer's adb, through the bridge (bridge
 /// design §4.4). Messages name the adb command.
 class BridgeDeviceShell implements DeviceShell {
-  BridgeDeviceShell({required this._bridge});
+  BridgeDeviceShell({
+    required this._bridge,
+    this._timeout = ProcessRunner.defaultTimeout,
+  });
 
   final BridgeControl _bridge;
+
+  /// How long [run] waits, as desktop waits for adb.
+  final Duration _timeout;
 
   static const _decoder = Utf8Decoder(allowMalformed: true);
 
@@ -21,9 +28,18 @@ class BridgeDeviceShell implements DeviceShell {
     final stdout = BytesBuilder(copy: false);
     final stderr = BytesBuilder(copy: false);
     try {
-      await for (final chunk in call.output) {
-        (chunk.isError ? stderr : stdout).add(chunk.bytes);
-      }
+      await call.output
+          .forEach(
+            (chunk) => (chunk.isError ? stderr : stdout).add(chunk.bytes),
+          )
+          .timeout(_timeout);
+    } on TimeoutException {
+      // A wedged adb: stop it, as desktop kills a command that runs too long.
+      call.kill();
+      throw AdbException(
+        '${describe(serial, command)} did not finish within '
+        '${_timeout.inSeconds} seconds',
+      );
     } on AdbException catch (e) {
       throw _failed(serial, command, e);
     }

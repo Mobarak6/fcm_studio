@@ -101,6 +101,30 @@ void main() {
     expect(await process.exitCode, -15);
   });
 
+  test(
+    'a command that never finishes times out, like on desktop, and is stopped',
+    () async {
+      final (client, channel) = await connectedBridgeClient();
+      final run = BridgeDeviceShell(
+        bridge: client,
+        timeout: const Duration(seconds: 1),
+      ).run('S1', const PhoneCommand.shell('pidof $app'));
+      channel.fromBridge(chunk(1, utf8.encode('partial')));
+      await expectLater(
+        run,
+        throwsA(
+          isA<AdbException>().having(
+            (e) => e.message,
+            'message',
+            '`adb -s S1 shell pidof $app` (through the bridge) did not finish '
+                'within 1 seconds',
+          ),
+        ),
+      );
+      expect(channel.sent.last, {'type': 'kill', 'id': 1});
+    },
+  );
+
   test('describe names adb and the bridge', () async {
     final (client, _) = await connectedBridgeClient();
     final shell = BridgeDeviceShell(bridge: client);
