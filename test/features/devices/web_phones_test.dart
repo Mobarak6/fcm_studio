@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:fcm_studio/features/devices/data/adb_exception.dart';
 import 'package:fcm_studio/features/devices/data/bridge/bridge_status.dart';
 import 'package:fcm_studio/features/devices/data/web_phones.dart';
