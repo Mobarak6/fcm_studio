@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:fcm_studio/features/projects/view/google_projects_dialog.dart';
 import 'package:file_selector/file_selector.dart';
@@ -21,6 +22,11 @@ class AddProjectDialog extends StatefulWidget {
 
   static const googleKey = Key('add-project-google');
   static const cancelGoogleKey = Key('add-project-google-cancel');
+  static const dropKey = Key('add-project-drop');
+  static const pasteKey = Key('add-project-paste');
+  static const addPastedKey = Key('add-project-add-pasted');
+
+  static const dropJsonMessage = 'Drop a .json key file.';
 
   @override
   State<AddProjectDialog> createState() => _AddProjectDialogState();
@@ -29,6 +35,10 @@ class AddProjectDialog extends StatefulWidget {
 class _AddProjectDialogState extends State<AddProjectDialog> {
   bool _remember = false;
   bool _busy = false;
+  bool _dragging = false;
+
+  /// The pasted key JSON. Cleared once it is added; never stored as typed.
+  final _pasted = TextEditingController();
   String? _error;
   String? _info;
 
@@ -50,12 +60,39 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
     if (file == null || !mounted) {
       return;
     }
+    await _addKey(file.readAsString);
+  }
+
+  Future<void> _addPasted() => _addKey(() async => _pasted.text);
+
+  /// A file dropped on the dialog: the first .json one is the key.
+  Future<void> _onDrop(DropDoneDetails details) async {
+    setState(() => _dragging = false);
+    if (_busy) {
+      return;
+    }
+    final file = details.files
+        .where((file) => file.name.toLowerCase().endsWith('.json'))
+        .firstOrNull;
+    if (file == null) {
+      setState(() {
+        _error = AddProjectDialog.dropJsonMessage;
+        _info = null;
+      });
+      return;
+    }
+    await _addKey(file.readAsString);
+  }
+
+  /// Adds the project from a key, however it arrived: chosen, dropped or
+  /// pasted.
+  Future<void> _addKey(Future<String> Function() readKey) async {
     setState(() {
       _busy = true;
       _error = null;
       _info = null;
     });
-    final text = await file.readAsString();
+    final text = await readKey();
     if (!mounted) {
       return;
     }
@@ -68,6 +105,7 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
     }
     switch (result) {
       case AddProjectSuccess(:final project, needsProjectNumber: true):
+        _pasted.clear();
         setState(() {
           _busy = false;
           _info =
@@ -119,10 +157,18 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Add pasted key turns on once something is pasted.
+    _pasted.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     // Closing the dialog while Google's page is open stops the sign-in, so
     // the loopback server closes too.
     _stopGoogle();
+    _pasted.dispose();
     super.dispose();
   }
 
@@ -138,6 +184,7 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
     final googleAvailable = context.read<ProjectsCubit>().canSignInWithGoogle;
     final waitingForGoogle = _cancelGoogle != null;
     return AlertDialog(
+      scrollable: true,
       title: const Text('Add project'),
       content: SizedBox(
         width: 480,
@@ -146,14 +193,69 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Choose a service account key file (.json). Get one in Firebase console → '
-              'Project settings → Service accounts → Generate new private key.',
+              'Choose a service account key file (.json), drop it here, or '
+              'paste its contents. Get one in Firebase console → Project '
+              'settings → Service accounts → Generate new private key.',
             ),
             const SizedBox(height: 12),
             Text(
               'Tip: create a separate service account that only has the '
               '"Firebase Cloud Messaging API Admin" role, and use its key here.',
               style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            DropTarget(
+              key: AddProjectDialog.dropKey,
+              enable: !_busy,
+              onDragEntered: (_) => setState(() => _dragging = true),
+              onDragExited: (_) => setState(() => _dragging = false),
+              onDragDone: _onDrop,
+              child: Container(
+                height: 64,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _dragging ? theme.colorScheme.primaryContainer : null,
+                  border: Border.all(
+                    color: _dragging
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outline,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.file_download_outlined),
+                    SizedBox(width: 8),
+                    Text('Drop the key .json file here'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              key: AddProjectDialog.pasteKey,
+              controller: _pasted,
+              enabled: !_busy,
+              minLines: 3,
+              maxLines: 6,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Or paste the key JSON',
+                hintText: '{ "type": "service_account", … }',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonal(
+                key: AddProjectDialog.addPastedKey,
+                onPressed: _busy || _pasted.text.trim().isEmpty
+                    ? null
+                    : _addPasted,
+                child: const Text('Add pasted key'),
+              ),
             ),
             if (kIsWeb) ...[
               const SizedBox(height: 12),
