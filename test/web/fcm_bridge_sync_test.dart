@@ -1,4 +1,6 @@
 import 'package:fcm_studio/features/devices/data/adb_commands.dart';
+import 'package:fcm_studio/features/devices/data/bridge/bridge_client.dart';
+import 'package:fcm_studio/features/devices/data/bridge/bridge_protocol.dart';
 import 'package:fcm_studio/features/devices/data/device_shell.dart';
 import 'package:fcm_studio/features/devices/data/process_runner.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,5 +61,15 @@ void main() {
         reason: '${command.kind.name} `${command.text}`',
       );
     }
+  });
+
+  test('the page and fcm_bridge.dart agree on protocol, port and texts', () {
+    expect(BridgeProtocol.version, bridge.bridgeProtocol);
+    expect(BridgeProtocol.port, bridge.bridgePort);
+    expect(
+      BridgeProtocol.url,
+      Uri.parse('ws://127.0.0.1:${bridge.bridgePort}'),
+    );
+    expect(BridgeClient.noAdbProblem, bridge.noAdbProblem);
   });
 }
