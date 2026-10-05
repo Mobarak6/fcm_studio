@@ -10,9 +10,10 @@ import 'package:fcm_studio/core/platform/file_access.dart';
 import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/devices/bloc/devices_bloc.dart';
+import 'package:fcm_studio/features/devices/cubit/bridge_cubit.dart';
 import 'package:fcm_studio/features/devices/cubit/token_reader_cubit.dart';
 import 'package:fcm_studio/features/devices/data/phone_access.dart';
-import 'package:fcm_studio/features/devices/data/webusb/web_usb_adb_service.dart';
+import 'package:fcm_studio/features/devices/data/web_phones.dart';
 import 'package:fcm_studio/features/history/cubit/history_cubit.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
@@ -94,14 +95,19 @@ class FcmStudioApp extends StatelessWidget {
               return cubit;
             },
           ),
+          if (dependencies.bridge case final bridge?)
+            BlocProvider(
+              lazy: false,
+              create: (_) => BridgeCubit(control: bridge)..start(),
+            ),
           BlocProvider(
             lazy: false,
             create: (_) {
               final bloc = DevicesBloc(serviceFor: dependencies.adbServiceFor);
-              // There is no adb to find on the web: WebUSB phones are
-              // tracked at once (WebUSB design §4.9).
-              if (dependencies.platform.deviceAccess == DeviceAccess.webUsb) {
-                bloc.add(const DevicesAdbChanged(WebUsbAdbService.source));
+              // There is no adb to find on the web: its phones (WebUSB and
+              // the bridge) are tracked at once (bridge design §4.6).
+              if (!dependencies.platform.canRunAdb) {
+                bloc.add(const DevicesAdbChanged(WebPhones.source));
               }
               return bloc;
             },

@@ -12,10 +12,14 @@ import 'package:fcm_studio/core/utils/clock.dart';
 import 'package:fcm_studio/features/composer/data/message_sender.dart';
 import 'package:fcm_studio/features/devices/data/adb_locator.dart';
 import 'package:fcm_studio/features/devices/data/adb_service.dart';
+import 'package:fcm_studio/features/devices/data/bridge/bridge_adb_service.dart';
+import 'package:fcm_studio/features/devices/data/bridge/bridge_client.dart';
+import 'package:fcm_studio/features/devices/data/bridge/bridge_platform.dart';
 import 'package:fcm_studio/features/devices/data/phone_access.dart';
 import 'package:fcm_studio/features/devices/data/process_runner.dart';
 import 'package:fcm_studio/features/devices/data/process_runner_platform.dart';
 import 'package:fcm_studio/features/devices/data/recent_packages_repository.dart';
+import 'package:fcm_studio/features/devices/data/web_phones.dart';
 import 'package:fcm_studio/features/devices/data/webusb/adb_key_store.dart';
 import 'package:fcm_studio/features/devices/data/webusb/web_usb_adb_service.dart';
 import 'package:fcm_studio/features/devices/data/webusb/webusb_platform.dart';
@@ -44,6 +48,7 @@ class AppDependencies {
     bool? isWindows,
     AdbService Function(String adbPath)? adbServiceFor,
     PhoneAccess? phoneAccess,
+    BridgeControl? bridge,
     GoogleAuthFlow? googleFlow,
     GoogleUserInfo? googleUserInfo,
   }) {
@@ -65,6 +70,27 @@ class AppDependencies {
             isWindows: defaultTargetPlatform == TargetPlatform.windows,
           )
         : null;
+    final settings = SettingsRepository(database: database);
+    // The web's second way to phones (bridge design §4.6). Tests pass their
+    // own.
+    final bridgeControl = features.canRunAdb
+        ? null
+        : bridge ??
+              BridgeClient(
+                connector: connectBridgeChannel,
+                readAutoConnect: settings.readBridgeAutoConnect,
+                writeAutoConnect: settings.writeBridgeAutoConnect,
+                isBlocked: bridgeBlockedByBrowser,
+                download: downloadBridgeFile,
+                alwaysAutoConnect: pageIsLocal(),
+              );
+    final webPhones = bridgeControl == null
+        ? null
+        : WebPhones(
+            bridge: bridgeControl,
+            bridgeService: BridgeAdbService(bridge: bridgeControl),
+            usb: webUsb,
+          );
     final projectsRepository = ProjectsRepository(
       database: database,
       secrets: secrets,
@@ -103,7 +129,7 @@ class AppDependencies {
         targets: targetsRepository,
         clock: clock,
       ),
-      settingsRepository: SettingsRepository(database: database),
+      settingsRepository: settings,
       recentPackagesRepository: RecentPackagesRepository(database: database),
       adbLocator: AdbLocator(
         runner: runner,
@@ -112,11 +138,12 @@ class AppDependencies {
       ),
       adbServiceFor:
           adbServiceFor ??
-          switch (webUsb) {
-            final service? => (_) => service,
+          switch (webPhones) {
+            final phones? => (_) => phones,
             null => (path) => ProcessAdbService(runner: runner, adbPath: path),
           },
       phoneAccess: phoneAccess ?? webUsb,
+      bridge: bridgeControl,
     );
   }
 
@@ -138,6 +165,7 @@ class AppDependencies {
     required this.adbLocator,
     required this.adbServiceFor,
     required this.phoneAccess,
+    required this.bridge,
   });
 
   static Future<AppDependencies> create() async {
@@ -178,4 +206,7 @@ class AppDependencies {
 
   /// Connect, Retry and Forget for the web's phones; null on desktop.
   final PhoneAccess? phoneAccess;
+
+  /// The web's bridge to the computer's adb; null on desktop.
+  final BridgeControl? bridge;
 }

@@ -19,4 +19,13 @@ void main() {
     await settings.writeAdbPath(null);
     expect(await settings.readAdbPath(), isNull);
   });
+
+  test('remembers whether the bridge connects by itself', () async {
+    final settings = SettingsRepository(database: database);
+    expect(await settings.readBridgeAutoConnect(), isFalse);
+    await settings.writeBridgeAutoConnect(true);
+    expect(await settings.readBridgeAutoConnect(), isTrue);
+    await settings.writeBridgeAutoConnect(false);
+    expect(await settings.readBridgeAutoConnect(), isFalse);
+  });
 }

@@ -6,7 +6,7 @@ import 'package:fcm_studio/app/shell.dart';
 import 'package:fcm_studio/core/platform/platform_capabilities.dart';
 import 'package:fcm_studio/features/composer/view/target_picker.dart';
 import 'package:fcm_studio/features/devices/bloc/devices_bloc.dart';
-import 'package:fcm_studio/features/devices/data/webusb/web_usb_adb_service.dart';
+import 'package:fcm_studio/features/devices/data/web_phones.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/projects/cubit/projects_cubit.dart';
 import 'package:fcm_studio/features/projects/domain/project.dart';
@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/app_harness.dart';
 import '../helpers/fake_adb_service.dart';
+import '../helpers/fake_bridge_control.dart';
 import '../helpers/fake_phone_access.dart';
 import '../helpers/fake_process_runner.dart';
 import '../helpers/service_account_fixture.dart';
@@ -166,10 +167,7 @@ void main() {
         ),
       );
       expect(adb.trackers, hasLength(1));
-      expect(
-        readCubit<DevicesBloc>(tester).state.adbPath,
-        WebUsbAdbService.source,
-      );
+      expect(readCubit<DevicesBloc>(tester).state.adbPath, WebPhones.source);
       expect(readCubit<AdbSetupCubit>(tester).state.status, AdbStatus.unknown);
       expect(find.byKey(const Key('nav-devices')), findsOneWidget);
       expect(find.byKey(const Key('nav-settings')), findsNothing);
@@ -177,4 +175,37 @@ void main() {
       expect(find.byKey(TargetPicker.fromDeviceKey), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'on the web the bridge starts with the app and phones are tracked',
+    (tester) async {
+      final bridge = FakeBridgeControl();
+      await pumpApp(
+        tester,
+        await buildTestDependencies(
+          tester,
+          adb: FakeAdbService(),
+          platform: const PlatformFeatures(deviceAccess: DeviceAccess.noWebUsb),
+          bridge: bridge,
+        ),
+      );
+      expect(bridge.starts, 1);
+      expect(readCubit<DevicesBloc>(tester).state.adbPath, WebPhones.source);
+    },
+  );
+
+  testWidgets('on the web WebPhones serves the phones; desktop has no bridge', (
+    tester,
+  ) async {
+    final bridge = FakeBridgeControl();
+    final web = await buildTestDependencies(
+      tester,
+      platform: const PlatformFeatures(deviceAccess: DeviceAccess.noWebUsb),
+      bridge: bridge,
+    );
+    expect(web.adbServiceFor(WebPhones.source), isA<WebPhones>());
+    expect(web.bridge, same(bridge));
+    final desktop = await buildTestDependencies(tester);
+    expect(desktop.bridge, isNull);
+  });
 }
