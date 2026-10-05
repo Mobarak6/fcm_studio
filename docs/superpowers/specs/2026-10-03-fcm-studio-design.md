@@ -56,7 +56,7 @@ These were checked on 2026-10-03:
      oauth2.googleapis.com          fcm / firebase.googleapis.com          adb → Android device
 ```
 
-`*` On desktop the device feature runs adb. From M5, Chromium web browsers (Chrome, Edge, Opera) talk to the phone directly over WebUSB, as described in [2026-10-04-webusb-devices-design.md](2026-10-04-webusb-devices-design.md). Other browsers show an explanation on the Devices screen instead.
+`*` On desktop the device feature runs adb. From M5, Chromium web browsers (Chrome, Edge, Opera) talk to the phone directly over WebUSB, as described in [2026-10-04-webusb-devices-design.md](2026-10-04-webusb-devices-design.md). From M5.1, any browser can also reach phones through a small local bridge program that runs the computer's adb, so the phone stays shared with IDEs ([2026-10-05-web-bridge-design.md](2026-10-05-web-bridge-design.md)).
 
 ### 3.2 Project structure
 
@@ -383,9 +383,9 @@ Turns each failure into a **title, an explanation and a suggested action**. The 
   - **With `$FCM_ACCESS_TOKEN` placeholder.**
 - Only bash quoting is supported. On Windows this works in Git Bash or WSL; PowerShell is not supported in v1.
 
-## 9. Device tokens (desktop: adb; web: WebUSB)
+## 9. Device tokens (desktop: adb; web: WebUSB or the local bridge)
 
-This section describes the desktop path. The web path (M5) runs the same phone commands over WebUSB; see [2026-10-04-webusb-devices-design.md](2026-10-04-webusb-devices-design.md).
+This section describes the desktop path. The web path (M5) runs the same phone commands over WebUSB; see [2026-10-04-webusb-devices-design.md](2026-10-04-webusb-devices-design.md). The web can also run them through the local bridge (M5.1); see [2026-10-05-web-bridge-design.md](2026-10-05-web-bridge-design.md).
 
 ### 9.1 Finding adb
 
@@ -517,6 +517,7 @@ This step runs only after the user confirms, because it restarts the app.
 | M3 | **Devices.** `AdbLocator`, `DevicesBloc`, packages, run-as token, logcat fallback, sender-ID check | The success test works fully on the Redmi in under 30 s |
 | M4 | **Google sign-in.** Desktop loopback, web popup, project list import | A teammate adds projects and sends without any key file |
 | M5 | **Phones on the web (WebUSB).** adb protocol in Dart over WebUSB, shared `AdbCommands`, Devices on Chromium web ([design](2026-10-04-webusb-devices-design.md)) | The WebUSB success test (design §10) passes on the Redmi in Chrome |
+| M5.1 | **Phones on the web through a local bridge.** `fcm_bridge.dart` (loopback WebSocket, Origin check, command allow-list), `BridgeClient`, `WebPhones`, two connect options on the web Devices screen ([design](2026-10-05-web-bridge-design.md)) | The bridge success test (design §9) passes on the Redmi in Chrome |
 | M6 | **Release builds.** macOS `.app` zip, Windows zip, static web build, README (setup, OAuth, manual checklist) | A teammate installs it from the README alone |
 
 **M0 token-file capture (2026-10-03):** deferred to the start of M3. It needs a debug build that uses `firebase_messaging` on the Redmi, plus the user running the capture commands, and nothing in M1 depends on it. On 2026-10-04 the capture was skipped; a hand-written fixture in the §9.3 format is used instead, and the M3 success test checks the real format.
@@ -581,6 +582,11 @@ This step runs only after the user confirms, because it restarts the app.
 - *Done:* the M5 code with its automated tests passing and a clean `flutter analyze`; `flutter build web` succeeds.
 - *Covered by unit tests:* the adb protocol, key pairing, shell v2 and the phone list, run against a fake phone. The browser layer (`webusb/browser/`) is checked by compiling it.
 - *Manual, pending:* the WebUSB success test (WebUSB design §10) on the Redmi in Chrome. That test also fills in the design's "to check" rows.
+
+**M5.1 status (2026-10-05):**
+- *Done:* the M5.1 code with its automated tests passing and a clean `flutter analyze`; `flutter build web` succeeds and serves `fcm_bridge.dart`.
+- *Covered by tests:* the bridge's rules and server (with a fake adb), the page's client, shell, service and `WebPhones`, and a real-WebSocket end-to-end read. The browser layer (`bridge/browser/`) is checked by compiling it.
+- *Manual, pending:* the bridge success test (bridge design §9). It also fills in the design's "to check" rows.
 
 ## 14. Open risks
 

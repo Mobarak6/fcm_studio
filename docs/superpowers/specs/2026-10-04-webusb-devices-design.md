@@ -318,7 +318,7 @@ Run it on the hosted HTTPS build (or `flutter run -d chrome`) in Chrome on macOS
 ## 11. Out of scope
 
 - Wireless debugging: browsers can't open TCP connections or pair over Wi-Fi.
-- Firefox and Safari: no WebUSB.
+- Firefox and Safari: no WebUSB. They can use the local bridge instead ([2026-10-05-web-bridge-design.md](2026-10-05-web-bridge-design.md)).
 - Android 6 and older.
 - Two tabs using the same phone at once.
 - File transfer (`sync:`), screen mirroring and `delayed_ack`.

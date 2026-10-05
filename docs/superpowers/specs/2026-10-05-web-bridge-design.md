@@ -1,6 +1,8 @@
 # FCM Studio: phones on the web through a local bridge
 
-**Status:** design approved in chat on 2026-10-05; this written spec is awaiting review.
+**Status:**
+- **Implemented:** 2026-10-05 (M5.1 code with tests).
+- **Pending:** the manual success test in §9, on the Redmi in Chrome, Firefox and Safari.
 
 **Milestone:** M5.1. It follows M5 (WebUSB). M6 (release builds) is unchanged.
 
@@ -290,7 +292,7 @@ The read fails with "The bridge stopped." The bridge rows disappear, and the lin
 | No `hello` within 5 s, or a malformed one | `notRunning`, and the retries continue |
 | `protocol` differs | `wrongVersion`; no retries until **Try again** |
 | `hello` has `adb: null` | `noAdb(problem)` |
-| A command is refused (only possible with a mismatched file) | The read's error: "The bridge refused `…`. Download fcm_bridge.dart again." |
+| A command is refused (only possible with a mismatched file) | The read's error: "`adb -s <serial> shell …` (through the bridge) failed: fcm_bridge refused this command." |
 | The connection drops mid-command | "The bridge stopped." on the read; `notRunning` on the line |
 | adb's own failures (device offline, `run-as` denied, …) | Unchanged: exit code and stderr reach `AdbCommands` exactly as on desktop |
 | Port 15037 taken when the bridge starts | Terminal only: "Port 15037 is in use; is another bridge already running?" |
