@@ -135,23 +135,24 @@ void main() {
     expect(adb.trackers.last.hasListener, isFalse);
   });
 
-  testWidgets('without WebUSB, Devices stays but From device is hidden', (
-    tester,
-  ) async {
-    await pumpApp(
-      tester,
-      await buildTestDependencies(
+  testWidgets(
+    'without WebUSB, Devices and From device stay: the bridge reads phones',
+    (tester) async {
+      await pumpApp(
         tester,
-        platform: const PlatformFeatures(deviceAccess: DeviceAccess.noWebUsb),
-      ),
-    );
-    await addTestProject(tester);
-    // The composer is on screen, so the target picker is built.
-    expect(find.text('Target'), findsOneWidget);
-    expect(find.byKey(const Key('nav-devices')), findsOneWidget);
-    expect(find.byKey(const Key('nav-settings')), findsNothing);
-    expect(find.byKey(TargetPicker.fromDeviceKey), findsNothing);
-  });
+        await buildTestDependencies(
+          tester,
+          platform: const PlatformFeatures(deviceAccess: DeviceAccess.noWebUsb),
+          bridge: FakeBridgeControl(),
+        ),
+      );
+      await addTestProject(tester);
+      expect(find.text('Target'), findsOneWidget);
+      expect(find.byKey(const Key('nav-devices')), findsOneWidget);
+      expect(find.byKey(const Key('nav-settings')), findsNothing);
+      expect(find.byKey(TargetPicker.fromDeviceKey), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'with WebUSB, phones are tracked at once and Settings is hidden',
