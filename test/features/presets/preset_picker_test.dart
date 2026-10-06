@@ -378,4 +378,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(composer.state.preset, isNull);
   });
+
+  testWidgets('Enter in the Group field saves what was typed', (tester) async {
+    await pumpAppWithProject(tester);
+    final presets = readCubit<PresetsCubit>(tester);
+    await tester.tap(find.byKey(PresetPicker.saveAsKey));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(PresetDetailsDialog.nameKey), 'Mine');
+    await tester.enterText(find.byKey(PresetDetailsDialog.groupKey), '6am');
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(InkWell, '6amMart'), findsOneWidget);
+
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await settleAsync(tester);
+    expect(find.byType(PresetDetailsDialog), findsNothing);
+    expect(
+      presets.state.userPresets.single.group,
+      '6am',
+      reason: 'Enter never swaps in a suggestion',
+    );
+  });
 }

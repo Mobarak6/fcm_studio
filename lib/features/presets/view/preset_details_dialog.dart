@@ -142,7 +142,9 @@ class _PresetDetailsDialogState extends State<PresetDetailsDialog> {
                         decoration: const InputDecoration(
                           labelText: 'Group (optional)',
                         ),
-                        onSubmitted: (_) => onFieldSubmitted(),
+                        // Enter saves what was typed, like the Name field;
+                        // a suggestion is picked by clicking it.
+                        onSubmitted: (_) => _save(),
                       ),
             ),
           ],
