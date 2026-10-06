@@ -5,6 +5,7 @@ import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/presets/domain/preset.dart';
 import 'package:fcm_studio/features/presets/domain/preset_codec.dart';
+import 'package:fcm_studio/features/presets/domain/preset_groups.dart';
 import 'package:fcm_studio/features/presets/view/preset_actions.dart';
 import 'package:fcm_studio/features/presets/view/preset_details_dialog.dart';
 import 'package:flutter/material.dart';
@@ -27,11 +28,24 @@ class _PresetsScreenState extends State<PresetsScreen> {
   /// Presets ticked for export, built-in ones included.
   final Set<String> _selected = {};
 
+  /// The keys of the groups whose sections are closed.
+  final Set<String> _closed = {};
+
+  /// True when every preset in [group] is ticked, false when none is, and
+  /// null (a dash) when some are.
+  bool? _ticked(PresetGroup group) {
+    final count = group.presets.where((p) => _selected.contains(p.id)).length;
+    if (count == 0) {
+      return false;
+    }
+    return count == group.presets.length ? true : null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<PresetsCubit>().state;
-    // Your own presets first: the built-in list is long.
-    final shown = [...state.userPresets, ...state.builtIns];
+    final groups = state.groups;
+    final shown = [for (final group in groups) ...group.presets];
     final selected = [
       for (final p in shown)
         if (_selected.contains(p.id)) p,
@@ -76,7 +90,6 @@ class _PresetsScreenState extends State<PresetsScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          const _Header('My presets'),
           if (state.userPresets.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -84,9 +97,29 @@ class _PresetsScreenState extends State<PresetsScreen> {
                 'No presets yet. Save one from the composer, or import a file.',
               ),
             ),
-          for (final preset in state.userPresets) tile(preset),
-          const _Header('Built-in'),
-          for (final preset in state.builtIns) tile(preset),
+          for (final group in groups) ...[
+            _GroupHeader(
+              group: group,
+              open: !_closed.contains(group.key),
+              ticked: _ticked(group),
+              onToggle: () => setState(() {
+                if (!_closed.remove(group.key)) {
+                  _closed.add(group.key);
+                }
+              }),
+              onTick: (on) => setState(() {
+                for (final preset in group.presets) {
+                  if (on) {
+                    _selected.add(preset.id);
+                  } else {
+                    _selected.remove(preset.id);
+                  }
+                }
+              }),
+            ),
+            if (!_closed.contains(group.key))
+              for (final preset in group.presets) tile(preset),
+          ],
         ],
       ),
     );
@@ -261,16 +294,46 @@ class _PresetsScreenState extends State<PresetsScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header(this.text);
+/// A group's section header. Its checkbox ticks every preset in the group;
+/// a tap elsewhere opens or closes the section.
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({
+    required this.group,
+    required this.open,
+    required this.ticked,
+    required this.onToggle,
+    required this.onTick,
+  });
 
-  final String text;
+  final PresetGroup group;
+  final bool open;
+
+  /// Null when some of the group's presets are ticked.
+  final bool? ticked;
+  final VoidCallback onToggle;
+  final ValueChanged<bool> onTick;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(text, style: Theme.of(context).textTheme.titleSmall),
+    return ListTile(
+      key: ValueKey('preset-group-${group.key}'),
+      leading: Checkbox(
+        key: ValueKey('preset-group-check-${group.key}'),
+        tristate: true,
+        value: ticked,
+        // All ticked: untick them all. Otherwise tick them all.
+        onChanged: (_) => onTick(ticked != true),
+      ),
+      title: Text(group.name, style: Theme.of(context).textTheme.titleSmall),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('${group.presets.length}'),
+          const SizedBox(width: 8),
+          Icon(open ? Icons.expand_less : Icons.expand_more),
+        ],
+      ),
+      onTap: onToggle,
     );
   }
 }

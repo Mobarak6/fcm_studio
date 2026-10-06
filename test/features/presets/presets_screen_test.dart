@@ -29,11 +29,13 @@ void main() {
   Future<Preset> saveMine(
     WidgetTester tester,
     PresetsCubit presets,
-    String name,
-  ) async {
+    String name, {
+    String group = '',
+  }) async {
     final saved = (await tester.runAsync(
       () => presets.saveAs(
         name: name,
+        group: group,
         template: const {
           'notification': {'title': 'A'},
         },
@@ -44,27 +46,127 @@ void main() {
     return saved;
   }
 
+  Finder header(String key) => find.byKey(ValueKey('preset-group-$key'));
+
+  /// Closes the long 6amMart section, so the Generic presets below it show.
+  Future<void> close6amMart(WidgetTester tester) async {
+    await tester.tap(header('6ammart'));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets("lists the built-in presets and the user's own", (tester) async {
     final (_, presets, _) = await openPresets(tester);
     await saveMine(tester, presets, 'Mine');
+    await close6amMart(tester);
     expect(find.text('Simple notification'), findsOneWidget);
     expect(find.text('Data only (silent / background)'), findsOneWidget);
     expect(find.text('Mine'), findsOneWidget);
   });
 
-  testWidgets('my presets come before the long built-in list', (tester) async {
+  testWidgets('presets are listed by group, groups with yours first', (
+    tester,
+  ) async {
     final (_, presets, _) = await openPresets(tester);
+    await saveMine(tester, presets, 'Ours', group: 'StackFood');
     await saveMine(tester, presets, 'Mine');
-    double top(String text) => tester.getTopLeft(find.text(text)).dy;
-    expect(top('My presets'), lessThan(top('Mine')));
-    expect(top('Mine'), lessThan(top('Built-in')));
-    expect(top('Built-in'), lessThan(top('Simple notification')));
+    double top(Finder finder) => tester.getTopLeft(finder).dy;
+    expect(top(header('stackfood')), lessThan(top(find.text('Ours'))));
+    expect(top(find.text('Ours')), lessThan(top(header(''))));
+    expect(top(header('')), lessThan(top(find.text('Mine'))));
+    expect(top(find.text('Mine')), lessThan(top(header('6ammart'))));
+    expect(
+      find.descendant(of: header(''), matching: find.text('No group')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: header('6ammart'), matching: find.text('23')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a section closes and opens again', (tester) async {
+    await openPresets(tester);
+    expect(find.text('User app · Order status'), findsOneWidget);
+
+    await close6amMart(tester);
+    expect(find.text('User app · Order status'), findsNothing);
+    expect(
+      tester.getTopLeft(header('6ammart')).dy,
+      lessThan(tester.getTopLeft(header('generic')).dy),
+    );
+
+    await tester.tap(header('6ammart'));
+    await tester.pumpAndSettle();
+    expect(find.text('User app · Order status'), findsOneWidget);
+  });
+
+  testWidgets('the group checkbox ticks and unticks all of its presets', (
+    tester,
+  ) async {
+    final (_, _, files) = await openPresets(tester);
+    final groupBox = find.byKey(const ValueKey('preset-group-check-6ammart'));
+    bool? ticked() => tester.widget<Checkbox>(groupBox).value;
+    expect(ticked(), isFalse);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(
+          const ValueKey('preset-builtin.6ammart.user.order_status'),
+        ),
+        matching: find.byType(Checkbox),
+      ),
+    );
+    await tester.pump();
+    expect(ticked(), isNull, reason: 'some are ticked: a dash');
+    expect(find.text('Export 1'), findsOneWidget);
+
+    await tester.tap(groupBox);
+    await tester.pump();
+    expect(ticked(), isTrue);
+    expect(find.text('Export 23'), findsOneWidget);
+
+    await tester.tap(find.byKey(PresetsScreen.exportKey));
+    await settleAsync(tester);
+    final exported = PresetCodec.decode(files.saved.single.text);
+    expect(exported, hasLength(23));
+    expect(exported.every((p) => p.group == '6amMart'), isTrue);
+
+    await tester.tap(groupBox);
+    await tester.pump();
+    expect(ticked(), isFalse);
+    expect(find.text('Export all'), findsOneWidget);
+  });
+
+  testWidgets('Edit details… moves a preset to another group', (tester) async {
+    final (_, presets, _) = await openPresets(tester);
+    final mine = await saveMine(tester, presets, 'Mine');
+    expect(header(''), findsOneWidget);
+
+    await tester.tap(find.byKey(ValueKey('preset-menu-${mine.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit details…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(PresetDetailsDialog.groupKey),
+      'StackFood',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
+    await settleAsync(tester);
+
+    expect(presets.state.userPresets.single.group, 'StackFood');
+    expect(header(''), findsNothing, reason: 'No group is empty now');
+    expect(
+      tester.getTopLeft(header('stackfood')).dy,
+      lessThan(tester.getTopLeft(find.text('Mine')).dy),
+    );
   });
 
   testWidgets('Open in composer loads the preset and shows the composer', (
     tester,
   ) async {
     final (composer, _, _) = await openPresets(tester);
+    await close6amMart(tester);
     await tester.tap(find.text('Notification + data'));
     await tester.pumpAndSettle();
     expect(composer.state.preset?.id, 'builtin.notification_data');
@@ -73,6 +175,7 @@ void main() {
 
   testWidgets('Duplicate makes an editable copy', (tester) async {
     final (_, presets, _) = await openPresets(tester);
+    await close6amMart(tester);
     await tester.tap(find.byKey(const ValueKey('preset-menu-builtin.simple')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Duplicate'));
@@ -110,6 +213,7 @@ void main() {
     tester,
   ) async {
     final (_, _, files) = await openPresets(tester);
+    await close6amMart(tester);
     await tester.tap(
       find.descendant(
         of: find.byKey(const ValueKey('preset-builtin.simple')),
@@ -129,6 +233,7 @@ void main() {
 
   testWidgets("a built-in preset's menu offers Export…", (tester) async {
     final (_, _, files) = await openPresets(tester);
+    await close6amMart(tester);
     await tester.tap(find.byKey(const ValueKey('preset-menu-builtin.simple')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Export…'));
