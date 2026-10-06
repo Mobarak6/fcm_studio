@@ -67,12 +67,9 @@ void main() {
     await tester.pump();
     await tester.tap(searchField);
     await tester.pumpAndSettle();
-    expect(
-      tester.getTopLeft(menuEntry('Mine')).dy,
-      lessThan(
-        tester.getTopLeft(menuEntry('Simple notification (built-in)')).dy,
-      ),
-    );
+    double top(Finder finder) => tester.getTopLeft(finder).dy;
+    expect(top(menuEntry('No group')), lessThan(top(menuEntry('Mine'))));
+    expect(top(menuEntry('Mine')), lessThan(top(menuEntry('6amMart'))));
   });
 
   testWidgets('an edit shows the dot; Save as stores a preset and clears it', (
@@ -328,5 +325,57 @@ void main() {
     await tester.tap(find.byKey(PresetDetailsDialog.saveKey).hitTestable());
     await settleAsync(tester);
     expect(presets.state.userPresets.single.name, 'Mine');
+  });
+
+  testWidgets('presets are listed under their group headers', (tester) async {
+    await pumpAppWithProject(tester);
+    await tester.tap(searchField);
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(menuEntry('6amMart')).dy,
+      lessThan(
+        tester.getTopLeft(menuEntry('User app · Order status (built-in)')).dy,
+      ),
+    );
+  });
+
+  testWidgets('the search matches group names and hides empty groups', (
+    tester,
+  ) async {
+    await pumpAppWithProject(tester);
+    await search(tester, '6ammart chat');
+    expect(menuEntry('6amMart'), findsOneWidget);
+    expect(menuEntry('User app · Chat message (built-in)'), findsOneWidget);
+    expect(menuEntry('Delivery app · Chat message (built-in)'), findsOneWidget);
+    expect(menuEntry('Store app · Chat message (built-in)'), findsOneWidget);
+    expect(menuEntry('Generic'), findsNothing);
+
+    await tester.enterText(searchField, 'generic');
+    await tester.pumpAndSettle();
+    expect(menuEntry('Generic'), findsOneWidget);
+    expect(menuEntry('Simple notification (built-in)'), findsOneWidget);
+    expect(
+      menuEntry('Data only (silent / background) (built-in)'),
+      findsOneWidget,
+    );
+    expect(menuEntry('6amMart'), findsNothing);
+
+    await tester.enterText(searchField, 'zzz');
+    await tester.pumpAndSettle();
+    expect(menuEntry('Generic'), findsNothing);
+    expect(menuEntry('6amMart'), findsNothing);
+  });
+
+  testWidgets('a group header cannot be picked', (tester) async {
+    final (_, composer) = await pumpAppWithProject(tester);
+    await tester.tap(searchField);
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<MenuItemButton>(menuEntry('6amMart')).onPressed,
+      isNull,
+    );
+    await tester.tap(menuEntry('6amMart'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(composer.state.preset, isNull);
   });
 }

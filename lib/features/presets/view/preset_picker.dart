@@ -1,6 +1,7 @@
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/presets/domain/preset.dart';
+import 'package:fcm_studio/features/presets/domain/preset_groups.dart';
 import 'package:fcm_studio/features/presets/view/preset_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,8 +32,7 @@ class PresetPicker extends StatelessWidget {
             Text('Preset', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             _PresetSearchField(
-              // Your own presets first: the built-in list is long.
-              presets: [...presets.userPresets, ...presets.builtIns],
+              groups: presets.groups,
               selected: current == null ? null : presets.byId(current.id),
               isDirty: composer.isDirty,
             ),
@@ -63,16 +63,16 @@ class PresetPicker extends StatelessWidget {
   }
 }
 
-/// A search field over [presets]. While it is not being typed in, it shows
-/// the loaded preset.
+/// A search field over the presets in [groups]. While it is not being typed
+/// in, it shows the loaded preset.
 class _PresetSearchField extends StatefulWidget {
   const _PresetSearchField({
-    required this.presets,
+    required this.groups,
     required this.selected,
     required this.isDirty,
   });
 
-  final List<Preset> presets;
+  final List<PresetGroup> groups;
   final Preset? selected;
   final bool isDirty;
 
@@ -96,8 +96,10 @@ class _PresetSearchFieldState extends State<_PresetSearchField> {
     return widget.isDirty ? '• $label' : label;
   }
 
-  /// Keeps the entries whose label holds every typed word, in any order.
-  static List<DropdownMenuEntry<String>> _matching(
+  /// Keeps the presets whose group and label hold every typed word, in any
+  /// order, each under its group's header. A header with no match under it
+  /// is left out.
+  List<DropdownMenuEntry<String>> _matching(
     List<DropdownMenuEntry<String>> entries,
     String filter,
   ) {
@@ -106,10 +108,28 @@ class _PresetSearchFieldState extends State<_PresetSearchField> {
         .split(RegExp(r'\s+'))
         .where((word) => word.isNotEmpty)
         .toList();
-    return [
-      for (final entry in entries)
-        if (words.every(entry.label.toLowerCase().contains)) entry,
-    ];
+    final groupOf = {
+      for (final group in widget.groups)
+        for (final preset in group.presets) preset.id: preset.group,
+    };
+    final result = <DropdownMenuEntry<String>>[];
+    DropdownMenuEntry<String>? header;
+    for (final entry in entries) {
+      // Headers are the only disabled entries.
+      if (!entry.enabled) {
+        header = entry;
+        continue;
+      }
+      final text = '${groupOf[entry.value] ?? ''} ${entry.label}'.toLowerCase();
+      if (words.every(text.contains)) {
+        if (header != null) {
+          result.add(header);
+          header = null;
+        }
+        result.add(entry);
+      }
+    }
+    return result;
   }
 
   @override
@@ -162,6 +182,7 @@ class _PresetSearchFieldState extends State<_PresetSearchField> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     // No initialSelection: it would replace the text, dropping the dot.
     return DropdownMenu<String>(
       key: PresetPicker.dropdownKey,
@@ -175,11 +196,25 @@ class _PresetSearchFieldState extends State<_PresetSearchField> {
       leadingIcon: const Icon(Icons.search),
       hintText: 'Search presets',
       dropdownMenuEntries: [
-        for (final preset in widget.presets)
+        for (final group in widget.groups) ...[
+          // A header: disabled, so it can't be highlighted or picked.
           DropdownMenuEntry(
-            value: preset.id,
-            label: PresetPicker._label(preset),
+            value: 'group:${group.key}',
+            label: group.name,
+            enabled: false,
+            labelWidget: Text(
+              group.name,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
           ),
+          for (final preset in group.presets)
+            DropdownMenuEntry(
+              value: preset.id,
+              label: PresetPicker._label(preset),
+            ),
+        ],
       ],
       onSelected: _open,
     );
