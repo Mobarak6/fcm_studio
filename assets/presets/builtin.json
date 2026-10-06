@@ -1781,6 +1781,2245 @@
       },
       "createdAt": "2026-10-06T00:00:00.000Z",
       "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.all.push_notification",
+      "name": "Push notification (topic)",
+      "group": "6Valley",
+      "description": "The admin's push notification campaign, to the topic sixvalley (retail) or sixvalley_wholesale (wholesale). The backend sends the image as its stored file name, e.g. 2026-10-06-6702a1b2c3d4e.webp, not a URL.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Weekend sale"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Up to 40% off this weekend."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "notification",
+          "message_key": "",
+          "excluded_user_id": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "is_read": "0"
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.all.maintenance",
+      "name": "Maintenance mode (silent)",
+      "group": "6Valley",
+      "description": "Data only, so no notification is shown. Sent when the admin turns maintenance mode on (\"Maintenance Mode start\") or off (\"Maintenance Mode End\") for some apps, to the topics maintenance_mode_start_user_app, maintenance_mode_start_vendor and maintenance_mode_start_deliveryman.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Maintenance Mode start"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "We are currently undergoing maintenance"}
+      ],
+      "template": {
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "",
+          "type": "maintenance_mode",
+          "is_read": "0"
+        }
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.all.demo_reset",
+      "name": "Demo reset (topic)",
+      "group": "6Valley",
+      "description": "Sent to the topic demo_reset when the demo database is refreshed.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Demo reset alert"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Demo data is being reset to default."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "demo_reset",
+          "message_key": "",
+          "excluded_user_id": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "is_read": "0"
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.all.chat",
+      "name": "Chat message",
+      "group": "6Valley",
+      "description": "A new chat message to a customer, a seller or a delivery man. message_key and notification_key are message_from_<sender>, and notification_from is the sender. It has its own envelope, without order_details_id and the auction and recipient keys.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new message from Smart Shop."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "sender", "label": "Sender", "type": "enum", "options": ["admin", "customer", "seller", "delivery_man"], "required": true, "defaultValue": "admin"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "is_read": "0",
+          "type": "chatting",
+          "message_key": "message_from_{{sender}}",
+          "notification_key": "message_from_{{sender}}",
+          "notification_from": "{{sender}}"
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.all.withdraw",
+      "name": "Withdraw approved / denied",
+      "group": "6Valley",
+      "description": "The admin or the vendor approved or denied a withdraw request of a seller or a delivery man. Titles: Withdraw request approved, Withdraw request denied.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Withdraw request approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your withdraw request has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "wallet_withdraw",
+          "is_read": "0",
+          "message_key": "withdraw_request_status_message",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.all.auction_owner",
+      "name": "Auction (owner)",
+      "group": "6Valley",
+      "description": "Sent to the owner of an auction (a seller or a customer), on the app and the web token. type and message_key are the same.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Auction"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your auction has a new bid."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["auction_new_bid", "auction_approved", "auction_denied", "auction_expired_result", "auction_new_participation", "auction_item_claimed", "auction_claim_payment_verified_owner", "auction_withdrawal_approved", "auction_withdrawal_rejected"], "required": true, "defaultValue": "auction_new_bid"},
+        {"key": "auction_id", "label": "Auction ID", "type": "text", "required": true, "defaultValue": "57"},
+        {"key": "auction_slug", "label": "Auction slug", "type": "text", "required": true, "defaultValue": "vintage-camera-a1b2c3"},
+        {"key": "auction_product_name", "label": "Product name (optional)", "type": "text", "required": false, "defaultValue": "Vintage camera"},
+        {"key": "auction_product_thumbnail_full_url", "label": "Product thumbnail URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/auction/thumbnail.webp"},
+        {"key": "recipient_user_id", "label": "Recipient user ID", "type": "text", "required": true, "defaultValue": "12"},
+        {"key": "recipient_type", "label": "Recipient", "type": "enum", "options": ["seller", "customer"], "required": true, "defaultValue": "seller"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "{{type}}",
+          "is_read": "0",
+          "message_key": "{{type}}",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "{{auction_id}}",
+          "auction_slug": "{{auction_slug}}",
+          "auction_product_name": "{{auction_product_name}}",
+          "auction_product_thumbnail_full_url": "{{auction_product_thumbnail_full_url}}",
+          "excluded_user_id": "",
+          "recipient_user_id": "{{recipient_user_id}}",
+          "recipient_type": "{{recipient_type}}"
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.customer.order_status",
+      "name": "Customer app · Order status",
+      "group": "6Valley",
+      "description": "Order status changes, order edits and refund decisions. message_key is the raw status (e.g. delivered) or, for edits and refunds, the template key. Refund messages also set order_details_id.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Hi John Doe, your order #100045 has been delivered."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "message_key", "label": "Message key", "type": "enum", "options": ["delivered", "pending", "confirmed", "processing", "out_for_delivery", "returned", "failed", "canceled", "order_edit_message", "order_edit_return_amount_message", "order_refunded_message", "refund_request_canceled_message"], "required": true, "defaultValue": "delivered"},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"},
+        {"key": "order_details_id", "label": "Order details ID (refunds only)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "order_details_id": "{{order_details_id}}",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "order",
+          "is_read": "0",
+          "message_key": "{{message_key}}",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.customer.verification_code",
+      "name": "Customer app · Delivery verification code",
+      "group": "6Valley",
+      "description": "Sent when the delivery man asks for the delivery verification code to be sent again (v6 API).",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order verification code"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Order verification code 482913"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "order",
+          "is_read": "0",
+          "message_key": "",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.customer.referral",
+      "name": "Customer app · Referral",
+      "group": "6Valley",
+      "description": "To the customer whose referral code was used. A new sign-up has no message_key (title \"Someone registered using your referral code!\"); an order of the referred customer (retail only) has the message_key your_referred_customer_has_been_place_order or your_referred_customer_order_has_been_delivered and the title \"Referral Reward Updates\".",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Someone registered using your referral code!"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You earn a reward when someone orders with your referral code."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "message_key", "label": "Message key (empty for a sign-up)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID (orders only)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "referral_code_used",
+          "is_read": "0",
+          "message_key": "{{message_key}}",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.customer.wallet",
+      "name": "Customer app · Fund added",
+      "group": "6Valley",
+      "description": "The admin added funds to the customer's wallet. The amount is in the title; message_key is empty.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "$50.00 Fund added"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Admin added fund to your wallet."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "wallet",
+          "is_read": "0",
+          "message_key": "",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.customer.auction",
+      "name": "Customer app · Auction (bidder)",
+      "group": "6Valley",
+      "description": "Sent to a customer taking part in an auction, on the app and the web token. type and message_key are the same. auction_outbid and auction_went_live don't set the product name and thumbnail.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Auction"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have been outbid."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["auction_outbid", "auction_went_live", "auction_won", "auction_participation_payment_verified", "auction_claim_payment_verified", "auction_commission_payment_verified", "auction_delivery_ready", "auction_delivery_on_the_way", "auction_delivered", "auction_claim_expired", "auction_next_bidder"], "required": true, "defaultValue": "auction_outbid"},
+        {"key": "auction_id", "label": "Auction ID", "type": "text", "required": true, "defaultValue": "57"},
+        {"key": "auction_slug", "label": "Auction slug", "type": "text", "required": true, "defaultValue": "vintage-camera-a1b2c3"},
+        {"key": "auction_product_name", "label": "Product name (optional)", "type": "text", "required": false, "defaultValue": "Vintage camera"},
+        {"key": "auction_product_thumbnail_full_url", "label": "Product thumbnail URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/auction/thumbnail.webp"},
+        {"key": "recipient_user_id", "label": "Recipient user ID", "type": "text", "required": true, "defaultValue": "12"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "{{type}}",
+          "is_read": "0",
+          "message_key": "{{type}}",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "{{auction_id}}",
+          "auction_slug": "{{auction_slug}}",
+          "auction_product_name": "{{auction_product_name}}",
+          "auction_product_thumbnail_full_url": "{{auction_product_thumbnail_full_url}}",
+          "excluded_user_id": "",
+          "recipient_user_id": "{{recipient_user_id}}",
+          "recipient_type": "customer"
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.customer.restock",
+      "name": "Customer app · Product restocked (topic)",
+      "group": "6Valley",
+      "description": "To the customers who asked to hear about a restock, on the topic restock_<restock request id>_product_restock_<product id>_topic. The title is the product name. No iOS sound.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Wireless earbuds"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "This product has restocked"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/product/thumbnail/earbuds.webp"},
+        {"key": "product_id", "label": "Product ID", "type": "text", "required": true, "defaultValue": "204"},
+        {"key": "slug", "label": "Product slug", "type": "text", "required": true, "defaultValue": "wireless-earbuds-x9k2"},
+        {"key": "status", "label": "Status", "type": "enum", "options": ["product_restocked", "product_update"], "required": true, "defaultValue": "product_restocked"},
+        {"key": "route", "label": "Product URL", "type": "text", "required": true, "defaultValue": "https://example.com/product/wireless-earbuds-x9k2"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "product_id": "{{product_id}}",
+          "slug": "{{slug}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "type": "product_restock_update",
+          "status": "{{status}}",
+          "route": "{{route}}",
+          "is_read": "0"
+        }
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.seller.order_status",
+      "name": "Seller app · Order status",
+      "group": "6Valley",
+      "description": "A new order, an order edit, a status change, or a delivery man assigned by the admin.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new order #100045 from John Doe."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "message_key", "label": "Message key", "type": "enum", "options": ["new_order_message", "order_edit_message", "order_edit_due_payment_message", "delivery_man_assign_by_admin_message", "delivered", "canceled", "order_refunded_message", "refund_request_canceled_message"], "required": true, "defaultValue": "new_order_message"},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "order",
+          "is_read": "0",
+          "message_key": "{{message_key}}",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.seller.refund",
+      "name": "Seller app · Refund request",
+      "group": "6Valley",
+      "description": "A customer asked for a refund (refund_request_message), or the admin changed its status (refund_request_status_changed_by_admin).",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "A refund request was placed on order #100045."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "message_key", "label": "Message key", "type": "enum", "options": ["refund_request_message", "refund_request_status_changed_by_admin"], "required": true, "defaultValue": "refund_request_message"},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"},
+        {"key": "order_details_id", "label": "Order details ID", "type": "text", "required": true, "defaultValue": "2201"},
+        {"key": "refund_id", "label": "Refund ID", "type": "text", "required": true, "defaultValue": "88"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "order_details_id": "{{order_details_id}}",
+          "refund_id": "{{refund_id}}",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "refund",
+          "is_read": "0",
+          "message_key": "{{message_key}}",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.seller.product",
+      "name": "Seller app · Product approved / rejected",
+      "group": "6Valley",
+      "description": "The admin approved or rejected a product. type is product_request_approved_message even for a rejection; message_key tells them apart. The title is the translated message key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Product request approved message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your product has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "message_key", "label": "Message key", "type": "enum", "options": ["product_request_approved_message", "product_request_rejected_message"], "required": true, "defaultValue": "product_request_approved_message"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "product_request_approved_message",
+          "is_read": "0",
+          "message_key": "{{message_key}}",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.seller.restock_request",
+      "name": "Seller app · Restock requests",
+      "group": "6Valley",
+      "description": "Customers asked for a product to be restocked. A minimal message: no type, no is_read and no iOS sound. Bodies: This product has <n> Restock Request, This product has 99+ Restock Request, <n> More products have restock request.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Wireless earbuds"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "This product has 3 Restock Request"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/product/thumbnail/earbuds.webp"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}"
+        }
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.seller.theme",
+      "name": "Seller app · Theme changed (topic)",
+      "group": "6Valley",
+      "description": "The admin told every vendor about a theme change, on the topic six_valley_seller. No type is passed, so type is empty.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Theme Changed to Theme Aster"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Theme Changed Description, time - 2026-10-06 10:15:00"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "",
+          "message_key": "",
+          "excluded_user_id": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "is_read": "0"
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.delivery.order_status",
+      "name": "Delivery man app · Order status",
+      "group": "6Valley",
+      "description": "An order was assigned, rescheduled, canceled or edited, or its expected delivery date or delivery charge changed. message_key is always empty for these.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Order #100045 has been assigned to you."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"},
+        {"key": "deliveryman_charge", "label": "Delivery charge (optional)", "type": "text", "required": false, "defaultValue": "5.00"},
+        {"key": "expected_delivery_date", "label": "Expected delivery date (optional)", "type": "text", "required": false, "defaultValue": "2026-10-08"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "{{deliveryman_charge}}",
+          "expected_delivery_date": "{{expected_delivery_date}}",
+          "type": "order",
+          "is_read": "0",
+          "message_key": "",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.delivery.cash_collect",
+      "name": "Delivery man app · Cash collected",
+      "group": "6Valley",
+      "description": "The admin or the vendor collected cash from the delivery man. The amount is in the title.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "$100.00 Cash deposit"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Admin collected cash from you."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "message_key", "label": "Message key", "type": "enum", "options": ["cash_collect_by_admin_message", "cash_collect_by_seller_message"], "required": true, "defaultValue": "cash_collect_by_admin_message"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "order_details_id": "",
+          "refund_id": "",
+          "deliveryman_charge": "",
+          "expected_delivery_date": "",
+          "type": "wallet",
+          "is_read": "0",
+          "message_key": "{{message_key}}",
+          "notification_key": "",
+          "notification_from": "",
+          "auction_id": "",
+          "auction_slug": "",
+          "auction_product_name": "",
+          "auction_product_thumbnail_full_url": "",
+          "excluded_user_id": "",
+          "recipient_user_id": "",
+          "recipient_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.6valley.admin.auction",
+      "name": "Admin panel · Auction (topic)",
+      "group": "6Valley",
+      "description": "Auction events for the admin, on the topic admin. type and message_key are the same.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Auction"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "A claim was submitted for an auction."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["auction_claim_submitted", "auction_withdrawal_submitted", "auction_commission_submitted"], "required": true, "defaultValue": "auction_claim_submitted"},
+        {"key": "auction_id", "label": "Auction ID", "type": "text", "required": true, "defaultValue": "57"},
+        {"key": "auction_slug", "label": "Auction slug", "type": "text", "required": true, "defaultValue": "vintage-camera-a1b2c3"},
+        {"key": "auction_product_name", "label": "Product name (optional)", "type": "text", "required": false, "defaultValue": "Vintage camera"},
+        {"key": "auction_product_thumbnail_full_url", "label": "Product thumbnail URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/auction/thumbnail.webp"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "{{type}}",
+          "message_key": "{{type}}",
+          "excluded_user_id": "",
+          "auction_id": "{{auction_id}}",
+          "auction_slug": "{{auction_slug}}",
+          "auction_product_name": "{{auction_product_name}}",
+          "auction_product_thumbnail_full_url": "{{auction_product_thumbnail_full_url}}",
+          "is_read": "0"
+        },
+        "apns": {"payload": {"aps": {"sound": "default"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.all.chat",
+      "name": "Chat message",
+      "group": "DriveMond",
+      "description": "A chat message in a trip, to the customer or the driver. type is the chat channel id (so body_loc_key is too) and user_name is the sender.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You got a new message from John Doe."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["new_message"], "required": true, "defaultValue": "new_message"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"},
+        {"key": "channel_id", "label": "Chat channel ID", "type": "text", "required": true, "defaultValue": "4d5e6f70-8192-4a3b-9c4d-5e6f7a8b9c0d"},
+        {"key": "user_name", "label": "Sender name", "type": "text", "required": true, "defaultValue": "John Doe"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "{{channel_id}}",
+          "user_name": "{{user_name}}",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "{{channel_id}}",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.all.wallet",
+      "name": "Wallet & rewards",
+      "group": "DriveMond",
+      "description": "fund_added_by_admin and fund_added_digitally: money added to a customer's wallet. referral_reward_received and someone_used_your_code: to the customer or driver whose referral code was used. For fund_added_by_admin and the referral ones the backend puts the user's own id in ride_request_id.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Fund added"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Admin has added $20.00 to your wallet."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["fund_added_by_admin", "fund_added_digitally", "referral_reward_received", "someone_used_your_code"], "required": true, "defaultValue": "fund_added_by_admin"},
+        {"key": "ride_request_id", "label": "ride_request_id (user id, optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.all.level_up",
+      "name": "Level up",
+      "group": "DriveMond",
+      "description": "A customer or driver reached a new level. A customer without a reward gets the action no_rewards; a driver without a reward keeps level_up and gets reward_type no_rewards.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Level up"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have completed your challenges and reached level Gold."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["level_up", "no_rewards"], "required": true, "defaultValue": "level_up"},
+        {"key": "reward_type", "label": "Reward type (optional)", "type": "text", "required": false, "defaultValue": "wallet"},
+        {"key": "reward_amount", "label": "Reward amount", "type": "text", "required": true, "defaultValue": "10"},
+        {"key": "next_level", "label": "Next level (optional)", "type": "text", "required": false, "defaultValue": "Platinum"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "",
+          "type": "",
+          "user_name": "",
+          "title_loc_key": "",
+          "body_loc_key": "",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "{{reward_type}}",
+          "reward_amount": "{{reward_amount}}",
+          "next_level": "{{next_level}}",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.all.review",
+      "name": "Review received",
+      "group": "DriveMond",
+      "description": "review_from_driver goes to the customer, review_from_customer to the driver.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Review"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "New review from a driver! See what he had to say about your trip."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["review_from_driver", "review_from_customer"], "required": true, "defaultValue": "review_from_driver"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"},
+        {"key": "trip_type", "label": "Trip type", "type": "enum", "options": ["ride_request", "parcel"], "required": true, "defaultValue": "ride_request"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "{{trip_type}}",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "{{trip_type}}",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.all.legal",
+      "name": "Legal pages updated",
+      "group": "DriveMond",
+      "description": "To every active customer and driver when the admin saves the legal, privacy policy or terms and conditions page.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Legal updated"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "We have updated our legal."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["legal_updated", "privacy_policy_updated", "terms_and_conditions_updated"], "required": true, "defaultValue": "legal_updated"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "",
+          "type": "",
+          "user_name": "",
+          "title_loc_key": "",
+          "body_loc_key": "",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.all.safety",
+      "name": "Safety alert",
+      "group": "DriveMond",
+      "description": "safety_problem_resolved goes to the customer or driver who sent a safety alert, when the admin marks it solved. type is safety_alert.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Safety Problem Resolved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Safety Problem Resolved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["safety_problem_resolved", "safety_alert_sent"], "required": true, "defaultValue": "safety_problem_resolved"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "safety_alert",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "safety_alert",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.all.maintenance",
+      "name": "Maintenance mode (topic)",
+      "group": "DriveMond",
+      "description": "The admin turned maintenance mode on or off, to the topics customer_maintenance_mode_on / _off and driver_maintenance_mode_on / _off. Titles: Server is under maintenance, Server running now.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Server is under maintenance"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You can not work now"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["maintenance_mode_on", "maintenance_mode_off"], "required": true, "defaultValue": "maintenance_mode_on"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "ride_request_id": "",
+          "type": "{{type}}",
+          "action": "",
+          "status": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride"
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.all.marketing",
+      "name": "Marketing notification (topic)",
+      "group": "DriveMond",
+      "description": "The admin's marketing notification, to the topic customers_send_notification or drivers_send_notification.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Weekend offer"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Get 20% off your next ride."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/push-notification/offer.png"},
+        {"key": "status", "label": "Status", "type": "text", "required": true, "defaultValue": "1"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "ride_request_id": "",
+          "type": "send_notification",
+          "action": "",
+          "status": "{{status}}",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride"
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.customer.ride",
+      "name": "Customer app · Ride status",
+      "group": "DriveMond",
+      "description": "Ride updates for the customer. Scheduled rides use the same actions (trip_accepted, trip_booked and trip_edited are scheduled only). searching_for_rider: the driver canceled and a new search started; ride_request_id and new_trip_id are the new trip.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Trip started"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your trip is started."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["driver_on_the_way", "trip_accepted", "trip_booked", "trip_edited", "trip_started", "trip_paused", "trip_resumed", "trip_completed", "trip_canceled", "driver_canceled_ride_request", "payment_successful", "searching_for_rider"], "required": true, "defaultValue": "driver_on_the_way"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"},
+        {"key": "new_trip_id", "label": "New trip ID (searching_for_rider only)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "ride_request",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "ride_request",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "{{new_trip_id}}",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.customer.shared",
+      "name": "Customer app · Shared ride",
+      "group": "DriveMond",
+      "description": "Shared ride updates for a passenger, including other passengers joining, being picked up or canceling.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Shared passenger found"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "A Shared passenger has been matched for your trip."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["shared_passenger_found", "shared_passenger_pickup", "shared_passenger_cancel_trip", "shared_trip_started", "shared_trip_paused", "shared_trip_resumed", "shared_trip_completed", "shared_trip_canceled"], "required": true, "defaultValue": "shared_passenger_found"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "ride_request",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "ride_request",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.customer.bids",
+      "name": "Customer app · Bids",
+      "group": "DriveMond",
+      "description": "A driver placed a bid on the customer's trip.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Received new bid"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Received a new bid request."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["received_new_bid", "bid_request_from_driver"], "required": true, "defaultValue": "received_new_bid"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"},
+        {"key": "trip_type", "label": "Trip type", "type": "enum", "options": ["ride_request", "parcel"], "required": true, "defaultValue": "ride_request"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "{{trip_type}}",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "{{trip_type}}",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.customer.parcel",
+      "name": "Customer app · Parcel status",
+      "group": "DriveMond",
+      "description": "Parcel updates for the customer. parcel_returning_otp carries the return OTP in the body.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Parcel picked up"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Parcel Picked-up."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["new_parcel", "parcel_picked_up", "parcel_on_the_way", "parcel_delivery_completed", "parcel_canceled", "parcel_canceled_after_trip_started", "parcel_returning_otp", "parcel_returned"], "required": true, "defaultValue": "new_parcel"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "parcel",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "parcel",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.customer.parcel_refund",
+      "name": "Customer app · Parcel refund",
+      "group": "DriveMond",
+      "description": "The admin decided a parcel refund. The backend sends the trip id as type for refund_accepted and refund_denied, coupon for refunded_as_coupon (with the coupon id as ride_request_id) and wallet for refunded_to_wallet.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Refund accepted"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "For parcel ID #100245 your refund request has been approved by admin. You will be refunded soon."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["refund_accepted", "refund_denied", "refunded_as_coupon", "refunded_to_wallet"], "required": true, "defaultValue": "refund_accepted"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"},
+        {"key": "refund_type", "label": "Type (trip id, coupon or wallet)", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "{{refund_type}}",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "{{refund_type}}",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.customer.arrival",
+      "name": "Customer app · Driver nearby / verify identity",
+      "group": "DriveMond",
+      "description": "auto_arrival_notification_customer_message: the driver is a few minutes away (title \"Driver is Nearby\", body from the business settings). verify_driver_identity: asks the customer to check the driver (title \"Verify Driver Identity\").",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Driver is Nearby"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your driver will arrive in 2 min."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["auto_arrival_notification_customer_message", "verify_driver_identity"], "required": true, "defaultValue": "auto_arrival_notification_customer_message"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "ride_request",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "ride_request",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.driver.request",
+      "name": "Driver app · New ride request",
+      "group": "DriveMond",
+      "description": "A new trip near the driver: a ride, a shared ride or a parcel (type parcel). Scheduled rides use new_ride_request.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New ride request"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new ride request."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["new_ride_request", "new_shared_ride_request", "new_parcel_request"], "required": true, "defaultValue": "new_ride_request"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"},
+        {"key": "trip_type", "label": "Trip type", "type": "enum", "options": ["ride_request", "parcel"], "required": true, "defaultValue": "ride_request"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "{{trip_type}}",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "{{trip_type}}",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.driver.trip",
+      "name": "Driver app · Trip updates",
+      "group": "DriveMond",
+      "description": "Trip updates for the driver. trip_canceled_for_driver_identity_mismatch also sets trip_readable_id and trip_cancellation_time. coupon_applied and coupon_removed come from older code.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Bid accepted"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Customer confirmed your bid."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["bid_accepted", "another_driver_assigned", "customer_rejected_bid", "bid_request_canceled_by_customer", "customer_canceled_trip", "customer_canceled_shared_trip", "trip_request_canceled", "shared_trip_request_canceled", "shared_trip_route_update", "pickup_time_started", "trip_canceled", "trip_completed", "shared_trip_completed", "payment_successful", "tips_from_customer", "auto_arrival_notification_driver_message", "trip_canceled_for_driver_identity_mismatch", "coupon_applied", "coupon_removed"], "required": true, "defaultValue": "bid_accepted"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"},
+        {"key": "trip_type", "label": "Trip type", "type": "enum", "options": ["ride_request", "parcel"], "required": true, "defaultValue": "ride_request"},
+        {"key": "trip_readable_id", "label": "Trip readable ID (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "trip_cancellation_time", "label": "Cancellation time (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "{{trip_type}}",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "{{trip_type}}",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "{{trip_readable_id}}",
+          "trip_cancellation_time": "{{trip_cancellation_time}}"
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.driver.parcel",
+      "name": "Driver app · Parcel",
+      "group": "DriveMond",
+      "description": "Parcel updates for the driver. For the refund and amount actions the backend sends the trip id as type.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Parcel canceled"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Parcel canceled. Please return the parcel within 2 hours."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["parcel_canceled", "parcel_returned", "parcel_return_penalty", "parcel_amount_deducted", "parcel_amount_debited", "refund_accepted", "refund_denied"], "required": true, "defaultValue": "parcel_canceled"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "parcel",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "parcel",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.driver.account",
+      "name": "Driver app · Account & verification",
+      "group": "DriveMond",
+      "description": "Changes to the driver's account, vehicle and verification. cash_in_hand_limit_exceeds puts the driver id in ride_request_id.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Identity image approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your identity image update request is approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["identity_image_approved", "identity_image_rejected", "vehicle_active", "vehicle_request_approved", "vehicle_request_denied", "driver_status_paused", "driver_suspended", "driver_unsuspended", "face_verification_completed_successfully", "face_verification_failed", "cash_in_hand_limit_exceeds"], "required": true, "defaultValue": "identity_image_approved"},
+        {"key": "ride_request_id", "label": "ride_request_id (driver id, optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "",
+          "user_name": "",
+          "title_loc_key": "{{ride_request_id}}",
+          "body_loc_key": "",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.driver.wallet",
+      "name": "Driver app · Wallet & withdraw",
+      "group": "DriveMond",
+      "description": "Cash collected by the admin, a digital payment to the admin, and withdraw request decisions.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Withdraw request approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "We are pleased to inform you that your withdrawal request has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["withdraw_request_approved", "withdraw_request_rejected", "withdraw_request_settled", "withdraw_request_reversed", "admin_collected_cash", "digital_payment_successful"], "required": true, "defaultValue": "withdraw_request_approved"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "",
+          "type": "",
+          "user_name": "",
+          "title_loc_key": "",
+          "body_loc_key": "",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.driver.admin_message",
+      "name": "Driver app · Message from admin",
+      "group": "DriveMond",
+      "description": "A chat message from the admin. ride_request_id is the driver id and type is the chat channel id.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Admin message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You got a new message from admin."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "action", "label": "Action", "type": "enum", "options": ["admin_message"], "required": true, "defaultValue": "admin_message"},
+        {"key": "driver_id", "label": "Driver ID", "type": "text", "required": true, "defaultValue": "7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f"},
+        {"key": "channel_id", "label": "Chat channel ID", "type": "text", "required": true, "defaultValue": "4d5e6f70-8192-4a3b-9c4d-5e6f7a8b9c0d"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "status": "1",
+          "ride_request_id": "{{driver_id}}",
+          "type": "{{channel_id}}",
+          "user_name": "",
+          "title_loc_key": "{{driver_id}}",
+          "body_loc_key": "{{channel_id}}",
+          "image": "{{image}}",
+          "action": "{{action}}",
+          "reward_type": "",
+          "reward_amount": "0",
+          "next_level": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "new_trip_id": "",
+          "trip_readable_id": "",
+          "trip_cancellation_time": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride", "sound": "notification.wav", "icon": "notification_icon"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.admin.new_trip",
+      "name": "Admin panel · New trip request (topic)",
+      "group": "DriveMond",
+      "description": "A new trip was requested, to the topic admin_notification. The backend sends the image as the string \"null\".",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New request notification"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "New request has been placed"},
+        {"key": "image", "label": "Image (optional)", "type": "text", "required": false, "defaultValue": "null"},
+        {"key": "type", "label": "Trip type", "type": "enum", "options": ["ride_request", "parcel"], "required": true, "defaultValue": "ride_request"},
+        {"key": "ride_request_id", "label": "Trip ID", "type": "text", "required": true, "defaultValue": "9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "ride_request_id": "{{ride_request_id}}",
+          "type": "{{type}}",
+          "action": "",
+          "status": "",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride"
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.drivemond.admin.safety",
+      "name": "Admin panel · Safety alert (topic)",
+      "group": "DriveMond",
+      "description": "A customer or driver sent (or resent) a safety alert, to the topic admin_safety_alert_notification. type is who sent it.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New safety alert"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have new safety alert"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Sent by", "type": "enum", "options": ["driver", "customer"], "required": true, "defaultValue": "driver"},
+        {"key": "sent_by", "label": "Sender user ID", "type": "text", "required": true, "defaultValue": "7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f"},
+        {"key": "trip_reference_id", "label": "Trip reference ID", "type": "text", "required": true, "defaultValue": "100245"},
+        {"key": "route", "label": "Route (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "ride_request_id": "",
+          "type": "{{type}}",
+          "title_loc_key": "",
+          "body_loc_key": "{{type}}",
+          "image": "{{image}}",
+          "sound": "notification.wav",
+          "android_channel_id": "hexaride",
+          "sent_by": "{{sent_by}}",
+          "trip_reference_id": "{{trip_reference_id}}",
+          "route": "{{route}}",
+          "action": "",
+          "status": ""
+        },
+        "android": {"priority": "high", "notification": {"channel_id": "hexaride"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}, "headers": {"apns-priority": "10"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.customer.booking",
+      "name": "Customer app · Booking status",
+      "group": "Demandium",
+      "description": "Booking updates for the customer: booking_place, booking status changes (the key comes from the booking status), booking_ignored_by_provider, service_location_updated, otp, offline_payment_approved and refund. booking_type is regular or repeat; repeat bookings may also set repeat_type single. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Booking placed"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your booking has been placed successfully."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "booking_place"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "booking"},
+        {"key": "booking_id", "label": "Booking ID", "type": "text", "required": true, "defaultValue": "5f1e2d3c-4b5a-4968-8776-655443322110"},
+        {"key": "booking_type", "label": "Booking type", "type": "enum", "options": ["regular", "repeat"], "required": true, "defaultValue": "regular"},
+        {"key": "repeat_type", "label": "Repeat type (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "{{booking_id}}",
+          "channel_id": "",
+          "user_id": "",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "{{booking_type}}",
+          "repeat_type": "{{repeat_type}}",
+          "post_id": "",
+          "provider_id": "",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.customer.bidding",
+      "name": "Customer app · Custom booking & bids",
+      "group": "Demandium",
+      "description": "customized_booking_request, customer_notification_for_provider_bid_offer, customer_notification_for_provider_bid_withdraw and customized_booking_request_delete. post_id is the customer's request; provider_id is set for a bid offer. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Provider bid offer"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Smart Cleaners offered $50.00 for your request."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "customer_notification_for_provider_bid_offer"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "bidding"},
+        {"key": "post_id", "label": "Post ID (optional)", "type": "text", "required": false, "defaultValue": "2a3b4c5d-6e7f-4809-9a1b-2c3d4e5f6a7b"},
+        {"key": "provider_id", "label": "Provider ID (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "channel_id": "",
+          "user_id": "",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "",
+          "repeat_type": "",
+          "post_id": "{{post_id}}",
+          "provider_id": "{{provider_id}}",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.customer.wallet",
+      "name": "Customer app · Wallet, referral & loyalty",
+      "group": "Demandium",
+      "description": "referral_code_used, referral_earning, referral_earning_first_booking, loyalty_point, add_fund_wallet and add_fund_wallet_bonus. Most set user_id to the customer. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Fund added"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "$20.00 has been added to your wallet."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "add_fund_wallet"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "wallet"},
+        {"key": "user_id", "label": "User ID (optional)", "type": "text", "required": false, "defaultValue": "8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "channel_id": "",
+          "user_id": "{{user_id}}",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "",
+          "repeat_type": "",
+          "post_id": "",
+          "provider_id": "",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.customer.account",
+      "name": "Customer app · Account & subscription",
+      "group": "Demandium",
+      "description": "customer_notification_for_availability_status, account_deactivated (also sent to providers and servicemen), the subscription keys, and service_suggestion_approve / service_suggestion_deny. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Account status"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your account has been deactivated."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "customer_notification_for_availability_status"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "general"},
+        {"key": "user_id", "label": "User ID (optional)", "type": "text", "required": false, "defaultValue": "8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "channel_id": "",
+          "user_id": "{{user_id}}",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "",
+          "repeat_type": "",
+          "post_id": "",
+          "provider_id": "",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.provider.booking",
+      "name": "Provider app · Booking",
+      "group": "Demandium",
+      "description": "new_service_request_arrived, booking_accepted, admin_assigned_booking and booking status changes for the provider. booking_type is regular or repeat. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New service request"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "A new service request has arrived."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "new_service_request_arrived"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "booking"},
+        {"key": "booking_id", "label": "Booking ID", "type": "text", "required": true, "defaultValue": "5f1e2d3c-4b5a-4968-8776-655443322110"},
+        {"key": "booking_type", "label": "Booking type", "type": "enum", "options": ["regular", "repeat"], "required": true, "defaultValue": "regular"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "{{booking_id}}",
+          "channel_id": "",
+          "user_id": "",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "{{booking_type}}",
+          "repeat_type": "",
+          "post_id": "",
+          "provider_id": "",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.provider.bidding",
+      "name": "Provider app · Bids",
+      "group": "Demandium",
+      "description": "new_service_request_arrived for a customer's custom request (post_id), and provider_bid_request_denied (provider_id). These come with an empty body. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New service request"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": false, "defaultValue": "A customer posted a new service request."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "new_service_request_arrived"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "bidding"},
+        {"key": "post_id", "label": "Post ID (optional)", "type": "text", "required": false, "defaultValue": "2a3b4c5d-6e7f-4809-9a1b-2c3d4e5f6a7b"},
+        {"key": "provider_id", "label": "Provider ID (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "channel_id": "",
+          "user_id": "",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "",
+          "repeat_type": "",
+          "post_id": "{{post_id}}",
+          "provider_id": "{{provider_id}}",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.provider.account",
+      "name": "Provider app · Account & payments",
+      "group": "Demandium",
+      "description": "provider_suspend, provider_suspension_remove (booking_id carries the provider id), admin_payable, provider_verified, withdraw_request_approve and withdraw_request_deny. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Account suspended"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your account has been suspended. Pay $120.00 to the admin to continue."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "provider_suspend"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "suspend"},
+        {"key": "booking_id", "label": "booking_id (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "user_id", "label": "User ID (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "{{booking_id}}",
+          "channel_id": "",
+          "user_id": "{{user_id}}",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "",
+          "repeat_type": "",
+          "post_id": "",
+          "provider_id": "",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.provider.promotion",
+      "name": "Provider app · Advertisements & campaigns",
+      "group": "Demandium",
+      "description": "advertisement_created_by_admin, advertisement_paused (with advertisement_id) and the campaign keys. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Advertisement created"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "The admin created an advertisement for Smart Cleaners."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "advertisement_created_by_admin"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "advertisement"},
+        {"key": "advertisement_id", "label": "Advertisement ID (optional)", "type": "text", "required": false, "defaultValue": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f"},
+        {"key": "user_id", "label": "User ID (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "channel_id": "",
+          "user_id": "{{user_id}}",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "{{advertisement_id}}",
+          "booking_type": "",
+          "repeat_type": "",
+          "post_id": "",
+          "provider_id": "",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.provider.services",
+      "name": "Provider app · Service suggestions & requests",
+      "group": "Demandium",
+      "description": "service_suggestion_approve, service_suggestion_deny and the service request approval keys. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Service suggestion approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your service suggestion has been approved."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "service_suggestion_approve"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "service"},
+        {"key": "user_id", "label": "User ID (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "channel_id": "",
+          "user_id": "{{user_id}}",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "",
+          "repeat_type": "",
+          "post_id": "",
+          "provider_id": "",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.serviceman.booking",
+      "name": "Serviceman app · Booking",
+      "group": "Demandium",
+      "description": "Booking status changes for the serviceman. Repeat bookings set booking_type repeat and repeat_type single. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Booking accepted"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have been assigned a booking."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "booking_accepted"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "booking"},
+        {"key": "booking_id", "label": "Booking ID", "type": "text", "required": true, "defaultValue": "5f1e2d3c-4b5a-4968-8776-655443322110"},
+        {"key": "booking_type", "label": "Booking type (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "repeat_type", "label": "Repeat type (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "{{booking_id}}",
+          "channel_id": "",
+          "user_id": "",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "{{booking_type}}",
+          "repeat_type": "{{repeat_type}}",
+          "post_id": "",
+          "provider_id": "",
+          "user_name": "",
+          "user_image": "",
+          "user_phone": "",
+          "user_type": ""
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.all.chat",
+      "name": "Chat message",
+      "group": "Demandium",
+      "description": "new_message to a customer, provider or serviceman. channel_id is the conversation; user_name, user_image, user_phone and user_type describe the sender. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new message from John Doe."},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "new_message"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "chatting"},
+        {"key": "channel_id", "label": "Channel ID", "type": "text", "required": true, "defaultValue": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d"},
+        {"key": "user_name", "label": "Sender name", "type": "text", "required": true, "defaultValue": "John Doe"},
+        {"key": "user_image", "label": "Sender image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "user_phone", "label": "Sender phone (optional)", "type": "text", "required": false, "defaultValue": "+8801700000000"},
+        {"key": "user_type", "label": "Sender type (optional)", "type": "text", "required": false, "defaultValue": "customer"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "channel_id": "{{channel_id}}",
+          "user_id": "",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "",
+          "advertisement_id": "",
+          "booking_type": "",
+          "repeat_type": "",
+          "post_id": "",
+          "provider_id": "",
+          "user_name": "{{user_name}}",
+          "user_image": "{{user_image}}",
+          "user_phone": "{{user_phone}}",
+          "user_type": "{{user_type}}"
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.all.push_notification",
+      "name": "Push notification (topic)",
+      "group": "Demandium",
+      "description": "The admin's push notification, to the topic <audience>-<zone id> (audience: customer, provider-admin, provider-serviceman or all).",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Weekend offer"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Book any cleaning service and get 20% off."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/app/public/push-notification/def.png"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "type": "general",
+          "group": "system",
+          "image": "{{image}}"
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.all.pages",
+      "name": "Pages updated (topic)",
+      "group": "Demandium",
+      "description": "The admin updated the terms and conditions or the privacy policy, to the topics customer, provider-admin and provider-serviceman.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Terms and conditions"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Page information has been updated!"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/app/public/push-notification/def.png"},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["terms_and_conditions", "privacy_policy"], "required": true, "defaultValue": "terms_and_conditions"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "type": "{{type}}",
+          "group": "system",
+          "image": "{{image}}"
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.all.business_model",
+      "name": "Business model updated (topic)",
+      "group": "Demandium",
+      "description": "The admin changed the business model (commission or subscription). type and group come from BusinessModelNotificationService::PUSH_TYPE / PUSH_GROUP; type them in.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Business model updated"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "The business model has been updated."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/app/public/push-notification/def.png"},
+        {"key": "type", "label": "Type (PUSH_TYPE)", "type": "text", "required": true, "defaultValue": "business_model"},
+        {"key": "group", "label": "Group (PUSH_GROUP)", "type": "text", "required": true, "defaultValue": "system"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "{{image}}"
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.provider.booking_alert",
+      "name": "Provider app · New booking alert (topic)",
+      "group": "Demandium",
+      "description": "A new booking in the provider's zone, to the topic demandium_provider_<zone id>_booking_message. The body is empty.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "new booking"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": false, "defaultValue": ""},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/app/public/push-notification/def.png"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "type": "booking_alert",
+          "group": "booking",
+          "image": "{{image}}"
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.provider.settings",
+      "name": "Provider app · Provider settings updated (topic)",
+      "group": "Demandium",
+      "description": "The admin turned service at the provider's place on or off, to the topic provider-admin.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Provider settings updated"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Service at provider place has been actived"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/app/public/push-notification/def.png"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "type": "general",
+          "group": "system",
+          "image": "{{image}}"
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.provider.verified",
+      "name": "Provider app · Verified (topic)",
+      "group": "Demandium",
+      "description": "The admin verified the provider, to the topic demandium_provider_<zone id>_<provider id>_booking_message. The backend sets type and group with notification_type() / notification_group() for the notification key; type them in. The default type is the notification key.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Provider verified"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Congratulations! Smart Cleaners is now verified."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": "https://example.com/storage/app/public/push-notification/def.png"},
+        {"key": "type", "label": "Type (from notification_type())", "type": "text", "required": true, "defaultValue": "provider_verified"},
+        {"key": "group", "label": "Group (from notification_group())", "type": "text", "required": true, "defaultValue": "verified"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "type": "{{type}}",
+          "group": "{{group}}",
+          "image": "{{image}}"
+        },
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}},
+        "android": {"notification": {"channel_id": "demandium"}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.all.maintenance",
+      "name": "Maintenance mode (silent)",
+      "group": "Demandium",
+      "description": "Data only, so no notification is shown. Sent when maintenance mode changes, with an empty body.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Maintenance mode"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "type": "maintenance",
+          "group": "system",
+          "image": ""
+        }
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.demandium.all.demo_reset",
+      "name": "Demo reset (silent)",
+      "group": "Demandium",
+      "description": "Data only. Sent when the demo data is reset to default.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Demo reset alert"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Demo data is being reset to default."}
+      ],
+      "template": {
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "booking_id": "",
+          "type": "demo_reset",
+          "group": "system",
+          "image": ""
+        }
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
     }
   ]
 }

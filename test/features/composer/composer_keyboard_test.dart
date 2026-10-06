@@ -171,9 +171,11 @@ void main() {
 
       await tester.tap(find.byKey(const Key('nav-presets')));
       await tester.pumpAndSettle();
-      // Close the long 6amMart section; the Generic presets are below it.
-      await tester.tap(find.byKey(const ValueKey('preset-group-6ammart')));
-      await tester.pumpAndSettle();
+      // Close the product sections; the Generic presets are below them.
+      for (final key in ['6ammart', '6valley', 'demandium', 'drivemond']) {
+        await tester.tap(find.byKey(ValueKey('preset-group-$key')));
+        await tester.pumpAndSettle();
+      }
       await tester.tap(find.text('Simple notification'));
       await tester.pumpAndSettle();
 

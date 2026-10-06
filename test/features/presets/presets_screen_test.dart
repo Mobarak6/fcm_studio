@@ -48,16 +48,18 @@ void main() {
 
   Finder header(String key) => find.byKey(ValueKey('preset-group-$key'));
 
-  /// Closes the long 6amMart section, so the Generic presets below it show.
-  Future<void> close6amMart(WidgetTester tester) async {
-    await tester.tap(header('6ammart'));
-    await tester.pumpAndSettle();
+  /// Closes the product sections listed before Generic, so its presets show.
+  Future<void> closeProductGroups(WidgetTester tester) async {
+    for (final key in ['6ammart', '6valley', 'demandium', 'drivemond']) {
+      await tester.tap(header(key));
+      await tester.pumpAndSettle();
+    }
   }
 
   testWidgets("lists the built-in presets and the user's own", (tester) async {
     final (_, presets, _) = await openPresets(tester);
     await saveMine(tester, presets, 'Mine');
-    await close6amMart(tester);
+    await closeProductGroups(tester);
     expect(find.text('Simple notification'), findsOneWidget);
     expect(find.text('Data only (silent / background)'), findsOneWidget);
     expect(find.text('Mine'), findsOneWidget);
@@ -88,7 +90,7 @@ void main() {
     await openPresets(tester);
     expect(find.text('User app · Order status'), findsOneWidget);
 
-    await close6amMart(tester);
+    await closeProductGroups(tester);
     expect(find.text('User app · Order status'), findsNothing);
     expect(
       tester.getTopLeft(header('6ammart')).dy,
@@ -163,7 +165,7 @@ void main() {
     tester,
   ) async {
     final (composer, _, _) = await openPresets(tester);
-    await close6amMart(tester);
+    await closeProductGroups(tester);
     await tester.tap(find.text('Notification + data'));
     await tester.pumpAndSettle();
     expect(composer.state.preset?.id, 'builtin.notification_data');
@@ -172,7 +174,7 @@ void main() {
 
   testWidgets('Duplicate makes an editable copy', (tester) async {
     final (_, presets, _) = await openPresets(tester);
-    await close6amMart(tester);
+    await closeProductGroups(tester);
     await tester.tap(find.byKey(const ValueKey('preset-menu-builtin.simple')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Duplicate'));
@@ -190,7 +192,7 @@ void main() {
     await settleAsync(tester);
     expect(files.saved.single.name, 'fcm-studio-presets.fcmpresets.json');
     final exported = PresetCodec.decode(files.saved.single.text);
-    expect(exported, hasLength(56));
+    expect(exported, hasLength(117));
     expect(exported.first.name, 'My alerts');
     expect(exported.map((p) => p.name), contains('Store app · New order'));
     // They import as normal, editable presets.
@@ -203,14 +205,14 @@ void main() {
     final (_, _, files) = await openPresets(tester);
     await tester.tap(find.byKey(PresetsScreen.exportKey));
     await settleAsync(tester);
-    expect(PresetCodec.decode(files.saved.single.text), hasLength(55));
+    expect(PresetCodec.decode(files.saved.single.text), hasLength(116));
   });
 
   testWidgets('a ticked built-in preset is exported on its own', (
     tester,
   ) async {
     final (_, _, files) = await openPresets(tester);
-    await close6amMart(tester);
+    await closeProductGroups(tester);
     await tester.tap(
       find.descendant(
         of: find.byKey(const ValueKey('preset-builtin.simple')),
@@ -230,7 +232,7 @@ void main() {
 
   testWidgets("a built-in preset's menu offers Export…", (tester) async {
     final (_, _, files) = await openPresets(tester);
-    await close6amMart(tester);
+    await closeProductGroups(tester);
     await tester.tap(find.byKey(const ValueKey('preset-menu-builtin.simple')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Export…'));
