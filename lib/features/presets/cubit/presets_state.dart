@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:fcm_studio/features/presets/domain/preset.dart';
 import 'package:fcm_studio/features/presets/domain/preset_codec.dart';
+import 'package:fcm_studio/features/presets/domain/preset_groups.dart';
 
 enum PresetsStatus { initial, loading, ready }
 
@@ -18,6 +19,17 @@ class PresetsState extends Equatable {
   final List<Preset> userPresets;
 
   List<Preset> get all => [...builtIns, ...userPresets];
+
+  /// [userPresets] and [builtIns] by group, in display order.
+  List<PresetGroup> get groups =>
+      groupPresets(userPresets: userPresets, builtIns: builtIns);
+
+  /// Every group's name, A→Z ignoring case, for suggestions. No group isn't
+  /// a name.
+  List<String> get groupNames => [
+    for (final group in groups)
+      if (group.key.isNotEmpty) group.name,
+  ]..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
   Preset? byId(String id) {
     for (final preset in all) {
