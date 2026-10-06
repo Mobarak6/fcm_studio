@@ -1,6 +1,6 @@
 # FCM Studio: preset groups
 
-**Status:** Designed 2026-10-06. Not implemented yet.
+**Status:** Designed and implemented 2026-10-06 (code with tests).
 
 **Builds on:** [2026-10-03-fcm-studio-design.md](2026-10-03-fcm-studio-design.md) (main spec, §5.5 layout and §6 presets). This document does not repeat it.
 

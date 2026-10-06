@@ -38,6 +38,7 @@ FCM Studio is one Flutter app with no backend. It runs on macOS, Windows and the
 - **Presets.**
   - 4 generic presets and 23 presets that copy the 6amMart backend's real payloads.
   - Your own presets, which you can export to a file and import to share with others.
+  - Grouped by product (6amMart, Generic, or groups you make), with a search over group and name.
 - **Saved targets, and a history of every send** with Resend and Copy as cURL.
 - **Plain-language errors.** Every FCM error says what happened and what to do next.
 - **Production safeguard.** Projects marked `prod` show a red banner and ask before every send.
@@ -164,10 +165,10 @@ Other target tools:
 
 The **Preset** field is a search.
 
-- **Searching:** type words in any order, ignoring case. For example, `store chat` finds "Store app · Chat message".
-- **Order:** your presets are listed before the built-in ones.
+- **Searching:** type words in any order, ignoring case. Words match a preset's group as well as its name. For example, `store chat` finds "Store app · Chat message", and `6ammart chat` finds the three 6amMart chat messages.
+- **Order:** presets are listed under their group's header, in the same order as the Presets screen ([section 4](#4-presets)).
 - **Unsaved changes:** a dot before the name means the loaded preset has unsaved changes. Switching to another preset then asks **Discard unsaved changes?**
-- **Save as preset…** creates a new preset. **Update preset** overwrites the loaded one.
+- **Save as preset…** creates a new preset and asks for its name, description and group. The group starts as the loaded preset's group. **Update preset** overwrites the loaded one.
 - **Cmd/Ctrl+S:** updates your loaded preset, or asks for a name (Save as preset…) when the message isn't from one of your presets.
 
 #### Variables
@@ -364,26 +365,39 @@ The bridge accepts `http://localhost:<any port>`, `http://127.0.0.1:<any port>` 
 
 #### Built-in presets
 
-Built-in presets are read-only. Use **Duplicate** to make an editable copy.
+Built-in presets are read-only. Use **Duplicate** to make an editable copy; the copy stays in the same group.
 
-- **Generic:** Simple notification, Notification with image, Notification + data, Data only (silent / background).
-- **6amMart (23 presets):** named "User app · …", "Delivery app · …", "Store app · …" and "6amMart · …".
+- **Generic** group: Simple notification, Notification with image, Notification + data, Data only (silent / background).
+- **6amMart** group (23 presets): named "User app · …", "Delivery app · …" and "Store app · …", plus two for all three apps, "Admin push notification (topic)" and "Maintenance mode (silent)".
   - They copy the real payloads of the 6amMart backend, including every key it sends (empty where it sends nothing), `channel_id: "6ammart"` and the sound `notification.wav`.
   - Together they cover all 35 `data.type` values the backend sends. A preset that covers several types has a **Type** choice list.
 
+#### Groups
+
+Every preset can have a group, for example the product it's for.
+
+- Set it in **Save as preset…** or **Edit details…**. The field suggests the groups you already use.
+- Groups ignore case, so "6amMart" and "6ammart" are one group.
+- Exports carry the group, so an imported file is grouped the same way.
+
 #### The Presets screen
 
-The screen lists **My presets** first, then **Built-in**. Each preset's menu has:
+The screen lists presets by group. Click a group's header to close or open its section. The order is:
+1. groups that hold your presets, A→Z;
+2. **No group**;
+3. the other (built-in) groups, A→Z.
+
+Inside a group, your presets come first. Each preset's menu has:
 - **Open in composer**
 - **Duplicate**
-- **Rename…**
+- **Edit details…** (name, description and group)
 - **Export…**
 - **Delete…**
 
 #### Export and import
 
 **Export:**
-- Tick presets, then click **Export N**. With nothing ticked, **Export all** exports everything, built-in presets included.
+- Tick presets, then click **Export N**. A group's checkbox ticks all of its presets. With nothing ticked, **Export all** exports everything, built-in presets included.
 - The file is `*.fcmpresets.json`. On desktop you choose where to save it; on the web it's downloaded.
 - Exports never include keys, targets or history.
 
