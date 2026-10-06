@@ -156,14 +156,14 @@ void main() {
     },
   );
 
-  test('built-in preset names are unique, ignoring case', () {
+  test('built-in preset names are unique within their group', () {
     final builtIns = PresetCodec.decode(
       File('assets/presets/builtin.json').readAsStringSync(),
     );
     final seen = <String>{};
     final duplicates = [
       for (final builtIn in builtIns)
-        if (!seen.add(PresetCodec.normalizeName(builtIn.name))) builtIn.id,
+        if (!seen.add(PresetCodec.identityOf(builtIn))) builtIn.id,
     ];
     expect(duplicates, isEmpty);
   });
@@ -173,8 +173,42 @@ void main() {
     String newId() => 'new-${++counter}';
     setUp(() => counter = 0);
 
-    Preset named(String name, {bool builtIn = false, String? id}) =>
-        preset.copyWith(id: id ?? name, name: name, builtIn: builtIn);
+    Preset named(
+      String name, {
+      bool builtIn = false,
+      String? id,
+      String group = '',
+    }) => preset.copyWith(
+      id: id ?? name,
+      name: name,
+      builtIn: builtIn,
+      group: group,
+    );
+
+    test('the same name in another group is no conflict', () {
+      final preview = PresetCodec.preview(
+        existing: [named('Order update', group: 'MyShop')],
+        incoming: [
+          named('order update'),
+          named('ORDER UPDATE', group: ' myshop '),
+        ],
+      );
+      expect(preview.conflicts, ['myshop › ORDER UPDATE']);
+    });
+
+    test('keep both numbers a copy within its own group', () {
+      final result = PresetCodec.resolve(
+        existing: [named('A', group: 'G')],
+        incoming: [
+          named('A'),
+          named('A', group: 'g'),
+        ],
+        choice: ImportConflictChoice.keepBoth,
+        newId: newId,
+        now: created,
+      );
+      expect(result.map((p) => p.name), ['A', 'A (2)']);
+    });
 
     test('lists name conflicts, ignoring case', () {
       final preview = PresetCodec.preview(

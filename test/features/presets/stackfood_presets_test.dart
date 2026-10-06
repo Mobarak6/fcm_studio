@@ -136,8 +136,8 @@ const backendTypes = {
 };
 
 const namePrefixes = {
-  // StackFood's own names for its apps, so no name clashes with 6amMart's.
-  'all': 'All apps · ',
+  // StackFood's own names for its apps; the group says "StackFood".
+  'all': '',
   'user': 'Customer app · ',
   'restaurant': 'Restaurant app · ',
   'panel': 'Restaurant panel · ',

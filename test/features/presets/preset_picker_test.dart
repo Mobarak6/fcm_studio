@@ -81,7 +81,10 @@ void main() {
       ..loadPreset(presets.state.byId('builtin.simple')!)
       ..setField(['notification', 'body'], 'Changed');
     await tester.pump();
-    expect(find.text('• Simple notification (built-in)'), findsOneWidget);
+    expect(
+      find.text('• Generic › Simple notification (built-in)'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(PresetPicker.saveAsKey));
     await tester.pumpAndSettle();
@@ -95,23 +98,37 @@ void main() {
     expect(presets.state.userPresets.single.name, 'My order message');
     expect(composer.state.preset?.name, 'My order message');
     expect(composer.state.isDirty, isFalse);
-    expect(find.text('My order message'), findsOneWidget);
+    expect(find.text('Generic › My order message'), findsOneWidget);
   });
 
-  testWidgets('Save as refuses a name that is already used', (tester) async {
+  testWidgets('Save as refuses a name already used in the same group', (
+    tester,
+  ) async {
     await pumpAppWithProject(tester);
+    final presets = readCubit<PresetsCubit>(tester);
     await tester.tap(find.byKey(PresetPicker.saveAsKey));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(PresetDetailsDialog.nameKey),
       'simple notification',
     );
+    await tester.enterText(find.byKey(PresetDetailsDialog.groupKey), 'generic');
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
     await tester.pump();
     expect(
-      find.text('A preset named "simple notification" already exists.'),
+      find.text(
+        'A preset named "simple notification" already exists in generic.',
+      ),
       findsOneWidget,
     );
+
+    // The same name is free in another group.
+    await tester.enterText(find.byKey(PresetDetailsDialog.groupKey), '');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
+    await settleAsync(tester);
+    expect(presets.state.userPresets.single.name, 'simple notification');
   });
 
   testWidgets(
@@ -249,7 +266,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(composer.state.preset?.id, 'builtin.simple');
     // The field shows the preset that is still loaded, with its dot.
-    expect(fieldText(tester), '• Simple notification (built-in)');
+    expect(fieldText(tester), '• Generic › Simple notification (built-in)');
 
     await pickPreset(tester, 'Data only (silent / background) (built-in)');
     await tester.tap(find.text('Discard'));

@@ -107,7 +107,10 @@ class PresetsCubit extends Cubit<PresetsState> {
     final now = _clock.now();
     final copy = preset.copyWith(
       id: _newId(),
-      name: PresetCodec.uniqueName('${preset.name} (copy)', _takenNames()),
+      name: PresetCodec.uniqueName(
+        '${preset.name} (copy)',
+        PresetCodec.namesIn(state.all, preset.group),
+      ),
       builtIn: false,
       createdAt: now,
       updatedAt: now,
@@ -196,8 +199,4 @@ class PresetsCubit extends Cubit<PresetsState> {
       throw ArgumentError(problem);
     }
   }
-
-  Set<String> _takenNames() => {
-    for (final p in state.all) PresetCodec.normalizeName(p.name),
-  };
 }

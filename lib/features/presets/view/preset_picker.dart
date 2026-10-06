@@ -1,6 +1,7 @@
 import 'package:fcm_studio/features/composer/cubit/composer_cubit.dart';
 import 'package:fcm_studio/features/presets/cubit/presets_cubit.dart';
 import 'package:fcm_studio/features/presets/domain/preset.dart';
+import 'package:fcm_studio/features/presets/domain/preset_codec.dart';
 import 'package:fcm_studio/features/presets/domain/preset_groups.dart';
 import 'package:fcm_studio/features/presets/view/preset_actions.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,15 @@ class PresetPicker extends StatelessWidget {
   static const saveAsKey = Key('preset-save-as');
   static const updateKey = Key('preset-update');
 
-  static String _label(Preset preset) =>
+  /// How the field shows [preset]: after its group, since names are only
+  /// unique within a group.
+  static String _label(Preset preset) {
+    final label = PresetCodec.fullName(preset);
+    return preset.builtIn ? '$label (built-in)' : label;
+  }
+
+  /// How the menu shows [preset], under its group's header.
+  static String _menuLabel(Preset preset) =>
       preset.builtIn ? '${preset.name} (built-in)' : preset.name;
 
   @override
@@ -96,9 +105,9 @@ class _PresetSearchFieldState extends State<_PresetSearchField> {
     return widget.isDirty ? '• $label' : label;
   }
 
-  /// Keeps the presets whose group and label hold every typed word, in any
-  /// order, each under its group's header. A header with no match under it
-  /// is left out.
+  /// Keeps the presets whose label (group and name) holds every typed word,
+  /// in any order, each under its group's header. A header with no match
+  /// under it is left out.
   List<DropdownMenuEntry<String>> _matching(
     List<DropdownMenuEntry<String>> entries,
     String filter,
@@ -108,10 +117,6 @@ class _PresetSearchFieldState extends State<_PresetSearchField> {
         .split(RegExp(r'\s+'))
         .where((word) => word.isNotEmpty)
         .toList();
-    final groupOf = {
-      for (final group in widget.groups)
-        for (final preset in group.presets) preset.id: preset.group,
-    };
     final result = <DropdownMenuEntry<String>>[];
     DropdownMenuEntry<String>? header;
     for (final entry in entries) {
@@ -120,8 +125,7 @@ class _PresetSearchFieldState extends State<_PresetSearchField> {
         header = entry;
         continue;
       }
-      final text = '${groupOf[entry.value] ?? ''} ${entry.label}'.toLowerCase();
-      if (words.every(text.contains)) {
+      if (words.every(entry.label.toLowerCase().contains)) {
         if (header != null) {
           result.add(header);
           header = null;
@@ -213,6 +217,7 @@ class _PresetSearchFieldState extends State<_PresetSearchField> {
             DropdownMenuEntry(
               value: preset.id,
               label: PresetPicker._label(preset),
+              labelWidget: Text(PresetPicker._menuLabel(preset)),
             ),
         ],
       ],

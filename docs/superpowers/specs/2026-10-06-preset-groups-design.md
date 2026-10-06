@@ -47,7 +47,9 @@ These were made in chat on 2026-10-06.
 
 ### 3.3 What stays the same
 
-- **Names stay unique across all groups.** `PresetsState.nameTaken` and the import conflict rules in `PresetCodec.preview` and `PresetCodec.resolve` don't change.
+- **Names are unique within a group** (changed 2026-10-06, when more product groups were added). Two groups may each have "Customer app · Order status".
+  - `PresetCodec.identity(group, name)` tells presets apart. `PresetsState.nameTaken`, Duplicate's "(copy)" numbering and the import conflict rules (`PresetCodec.preview`, `PresetCodec.resolve`) all compare it.
+  - Places without a group header show `PresetCodec.fullName`, e.g. "StackFood › Customer app · Order status": the composer's preset field and the import conflict list.
 - **Duplicate** keeps the group: `copyWith` copies it.
 - **Export and import:** `PresetCodec.encode` writes `toJson`, so `group` is in the file. The file format version stays 1. An older FCM Studio ignores the unknown key and imports the preset with no group.
 

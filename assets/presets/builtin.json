@@ -884,7 +884,7 @@
     },
     {
       "id": "builtin.stackfood.all.push_notification",
-      "name": "All apps · Admin push notification (topic)",
+      "name": "Admin push notification (topic)",
       "group": "StackFood",
       "description": "The admin's push notification from the Notifications page, sent to a topic: all_zone_customer, zone_<id>_customer, all_zone_restaurant, zone_<id>_restaurant, all_zone_delivery_man or zone_<id>_delivery_man.",
       "variables": [
@@ -912,7 +912,7 @@
     },
     {
       "id": "builtin.stackfood.all.maintenance",
-      "name": "All apps · Maintenance mode (silent)",
+      "name": "Maintenance mode (silent)",
       "group": "StackFood",
       "description": "Data only, so no notification is shown. maintenance is sent when maintenance mode is turned on (\"maintenance mode\" / \"We are Working On Something Special!\") or off (\"We are back\" / \"Maintenance mode is removed\"), to the topics maintenance_mode_user_app, maintenance_mode_deliveryman_app and maintenance_mode_restaurant_app. stackfood_demo_reset (title and body \"demo_reset\") goes to the topic stackfood_demo_reset, on the demo server only.",
       "variables": [

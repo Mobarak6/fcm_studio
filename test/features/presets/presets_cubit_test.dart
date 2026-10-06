@@ -231,7 +231,11 @@ void main() {
     );
     expect(cubit.state.nameTaken('a'), isTrue);
     expect(cubit.state.nameTaken('a', exceptId: saved.id), isFalse);
-    expect(cubit.state.nameTaken('SIMPLE NOTIFICATION'), isTrue);
+    expect(cubit.state.nameTaken('SIMPLE NOTIFICATION'), isFalse);
+    expect(
+      cubit.state.nameTaken('SIMPLE NOTIFICATION', group: ' generic '),
+      isTrue,
+    );
 
     final renamed = await cubit.rename(
       saved,
@@ -275,11 +279,11 @@ void main() {
             'notification': {'title': 'Imported'},
           },
         ),
-        saved.copyWith(id: 'x', name: 'Simple notification'),
+        saved.copyWith(id: 'x', name: 'Simple notification', group: 'Generic'),
       ], exportedAt: clock.now());
 
       final preview = cubit.previewImport(file);
-      expect(preview.conflicts, ['A', 'Simple notification']);
+      expect(preview.conflicts, ['A', 'Generic › Simple notification']);
 
       expect(await cubit.applyImport(preview, ImportConflictChoice.replace), 2);
       expect(cubit.state.userPresets.map((p) => p.name), [

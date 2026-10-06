@@ -61,7 +61,7 @@ Future<void> savePresetAs(BuildContext context) async {
   final details = await showPresetDetailsDialog(
     context,
     title: 'Save as preset',
-    isNameTaken: presets.state.nameTaken,
+    isNameTaken: (name, group) => presets.state.nameTaken(name, group: group),
     // A changed 6amMart preset is saved as a 6amMart preset unless changed.
     group: composer.state.preset?.group ?? '',
     groups: presets.state.groupNames,

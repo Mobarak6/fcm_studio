@@ -40,11 +40,12 @@ class PresetsState extends Equatable {
     return null;
   }
 
-  /// True when another preset already uses [name] (ignoring case).
-  bool nameTaken(String name, {String? exceptId}) => all.any(
+  /// True when another preset in [group] already uses [name] (both ignoring
+  /// case). Presets in different groups may share a name.
+  bool nameTaken(String name, {String group = '', String? exceptId}) => all.any(
     (p) =>
         p.id != exceptId &&
-        PresetCodec.normalizeName(p.name) == PresetCodec.normalizeName(name),
+        PresetCodec.identityOf(p) == PresetCodec.identity(group, name),
   );
 
   PresetsState copyWith({

@@ -159,8 +159,11 @@ class _PresetsScreenState extends State<PresetsScreen> {
               description: preset.description,
               group: preset.group,
               groups: presets.state.groupNames,
-              isNameTaken: (name) =>
-                  presets.state.nameTaken(name, exceptId: preset.id),
+              isNameTaken: (name, group) => presets.state.nameTaken(
+                name,
+                group: group,
+                exceptId: preset.id,
+              ),
             );
             if (details != null) {
               final renamed = await presets.rename(

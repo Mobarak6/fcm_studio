@@ -361,7 +361,7 @@ class HistoryTile extends StatelessWidget {
     final details = await showPresetDetailsDialog(
       context,
       title: 'Save as preset',
-      isNameTaken: presets.state.nameTaken,
+      isNameTaken: (name, group) => presets.state.nameTaken(name, group: group),
       groups: presets.state.groupNames,
     );
     if (details == null) {

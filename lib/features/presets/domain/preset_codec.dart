@@ -87,25 +87,27 @@ abstract final class PresetCodec {
     return result;
   }
 
-  /// Lists the incoming names that already exist, ignoring case.
+  /// Lists the incoming presets whose name already exists in their group,
+  /// ignoring case, as [fullName]s.
   static ImportPreview preview({
     required List<Preset> existing,
     required List<Preset> incoming,
   }) {
-    final names = {for (final p in existing) normalizeName(p.name)};
+    final taken = {for (final p in existing) identityOf(p)};
     return ImportPreview(
       incoming: incoming,
       conflicts: [
         for (final p in incoming)
-          if (names.contains(normalizeName(p.name))) p.name,
+          if (taken.contains(identityOf(p))) fullName(p),
       ],
     );
   }
 
   /// The presets to store for an import. Imported presets are never built-in
   /// and get a new id, unless they replace an existing user preset, which
-  /// keeps its id and createdAt. A name clash (with an existing preset or an
-  /// earlier one in the file) is skipped, or kept with " (2)". Replace only
+  /// keeps its id and createdAt. A clash (the same name in the same group, as
+  /// an existing preset or an earlier one in the file) is skipped, or kept
+  /// with " (2)". Replace only
   /// applies to an existing non-built-in preset, once; any other clash is kept
   /// as a copy. Result ids are unique.
   static List<Preset> resolve({
@@ -115,14 +117,14 @@ abstract final class PresetCodec {
     required IdGenerator newId,
     required DateTime now,
   }) {
-    final taken = {for (final p in existing) normalizeName(p.name): p};
+    final taken = {for (final p in existing) identityOf(p): p};
     final replaceable = {
       for (final p in existing)
-        if (!p.builtIn) normalizeName(p.name): p,
+        if (!p.builtIn) identityOf(p): p,
     };
     final result = <Preset>[];
     for (final preset in incoming) {
-      final key = normalizeName(preset.name);
+      final key = identityOf(preset);
       final clash = taken[key];
       if (clash != null && choice == ImportConflictChoice.skip) {
         continue;
@@ -134,12 +136,12 @@ abstract final class PresetCodec {
         id: replaced?.id ?? newId(),
         name: clash == null || replaced != null
             ? preset.name
-            : uniqueName(preset.name, taken.keys.toSet()),
+            : uniqueName(preset.name, namesIn(taken.values, preset.group)),
         builtIn: false,
         createdAt: replaced?.createdAt ?? preset.createdAt,
         updatedAt: now,
       );
-      taken[normalizeName(stored.name)] = stored;
+      taken[identityOf(stored)] = stored;
       result.add(stored);
     }
     return result;
@@ -160,4 +162,25 @@ abstract final class PresetCodec {
 
   /// How names are compared: trimmed and lower-cased.
   static String normalizeName(String name) => name.trim().toLowerCase();
+
+  /// What tells presets apart: their group and name, compared with
+  /// [normalizeName]. Presets in different groups may share a name.
+  static String identity(String group, String name) =>
+      '${normalizeName(group)}\u0000${normalizeName(name)}';
+
+  static String identityOf(Preset preset) =>
+      identity(preset.group, preset.name);
+
+  /// The [normalizeName]d names that [presets] use in [group].
+  static Set<String> namesIn(Iterable<Preset> presets, String group) => {
+    for (final p in presets)
+      if (normalizeName(p.group) == normalizeName(group)) normalizeName(p.name),
+  };
+
+  /// [preset]'s name after its group, e.g. "StackFood › Customer app · Order
+  /// status", for places that show it without a group header.
+  static String fullName(Preset preset) {
+    final group = preset.group.trim();
+    return group.isEmpty ? preset.name : '$group › ${preset.name}';
+  }
 }

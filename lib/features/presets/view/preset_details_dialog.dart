@@ -5,7 +5,7 @@ typedef PresetDetails = ({String name, String description, String group});
 Future<PresetDetails?> showPresetDetailsDialog(
   BuildContext context, {
   required String title,
-  required bool Function(String name) isNameTaken,
+  required bool Function(String name, String group) isNameTaken,
   String name = '',
   String description = '',
   String group = '',
@@ -22,7 +22,8 @@ Future<PresetDetails?> showPresetDetailsDialog(
   ),
 );
 
-/// Asks for a preset's name, description and group. Names must be unique.
+/// Asks for a preset's name, description and group. Names must be unique
+/// within the group.
 class PresetDetailsDialog extends StatefulWidget {
   const PresetDetailsDialog({
     required this.title,
@@ -40,7 +41,7 @@ class PresetDetailsDialog extends StatefulWidget {
   static const saveKey = Key('preset-details-save');
 
   final String title;
-  final bool Function(String name) isNameTaken;
+  final bool Function(String name, String group) isNameTaken;
   final String name;
   final String description;
   final String group;
@@ -90,15 +91,18 @@ class _PresetDetailsDialogState extends State<PresetDetailsDialog> {
       setState(() => _error = 'Enter a name.');
       return;
     }
-    if (widget.isNameTaken(name)) {
-      setState(() => _error = 'A preset named "$name" already exists.');
+    final group = _group.text.trim();
+    if (widget.isNameTaken(name, group)) {
+      setState(
+        () => _error = group.isEmpty
+            ? 'A preset named "$name" already exists.'
+            : 'A preset named "$name" already exists in $group.',
+      );
       return;
     }
-    Navigator.of(context).pop((
-      name: name,
-      description: _description.text.trim(),
-      group: _group.text.trim(),
-    ));
+    Navigator.of(
+      context,
+    ).pop((name: name, description: _description.text.trim(), group: group));
   }
 
   @override
