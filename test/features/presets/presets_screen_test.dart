@@ -67,10 +67,10 @@ void main() {
     tester,
   ) async {
     final (_, presets, _) = await openPresets(tester);
-    await saveMine(tester, presets, 'Ours', group: 'StackFood');
+    await saveMine(tester, presets, 'Ours', group: 'MyShop');
     await saveMine(tester, presets, 'Mine');
     double top(Finder finder) => tester.getTopLeft(finder).dy;
-    expect(top(header('stackfood')), lessThan(top(find.text('Ours'))));
+    expect(top(header('myshop')), lessThan(top(find.text('Ours'))));
     expect(top(find.text('Ours')), lessThan(top(header(''))));
     expect(top(header('')), lessThan(top(find.text('Mine'))));
     expect(top(find.text('Mine')), lessThan(top(header('6ammart'))));
@@ -146,18 +146,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit details…'));
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(PresetDetailsDialog.groupKey),
-      'StackFood',
-    );
+    await tester.enterText(find.byKey(PresetDetailsDialog.groupKey), 'MyShop');
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
     await settleAsync(tester);
 
-    expect(presets.state.userPresets.single.group, 'StackFood');
+    expect(presets.state.userPresets.single.group, 'MyShop');
     expect(header(''), findsNothing, reason: 'No group is empty now');
     expect(
-      tester.getTopLeft(header('stackfood')).dy,
+      tester.getTopLeft(header('myshop')).dy,
       lessThan(tester.getTopLeft(find.text('Mine')).dy),
     );
   });
@@ -193,7 +190,7 @@ void main() {
     await settleAsync(tester);
     expect(files.saved.single.name, 'fcm-studio-presets.fcmpresets.json');
     final exported = PresetCodec.decode(files.saved.single.text);
-    expect(exported, hasLength(28));
+    expect(exported, hasLength(56));
     expect(exported.first.name, 'My alerts');
     expect(exported.map((p) => p.name), contains('Store app · New order'));
     // They import as normal, editable presets.
@@ -206,7 +203,7 @@ void main() {
     final (_, _, files) = await openPresets(tester);
     await tester.tap(find.byKey(PresetsScreen.exportKey));
     await settleAsync(tester);
-    expect(PresetCodec.decode(files.saved.single.text), hasLength(27));
+    expect(PresetCodec.decode(files.saved.single.text), hasLength(55));
   });
 
   testWidgets('a ticked built-in preset is exported on its own', (

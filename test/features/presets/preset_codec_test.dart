@@ -120,7 +120,7 @@ void main() {
       'Notification + data',
       'Data only (silent / background)',
     ]);
-    expect(presets, hasLength(27));
+    expect(presets, hasLength(55));
     for (final p in presets) {
       final result = const MessageRenderer().render(
         template: p.template,
@@ -139,18 +139,33 @@ void main() {
     }
   });
 
-  test('the built-in presets are in the groups Generic and 6amMart', () {
+  test(
+    'the built-in presets are in the groups Generic, 6amMart and StackFood',
+    () {
+      final builtIns = PresetCodec.decode(
+        File('assets/presets/builtin.json').readAsStringSync(),
+      );
+      for (final builtIn in builtIns) {
+        expect(builtIn.group, switch (builtIn.id.split('.')[1]) {
+          '6ammart' => '6amMart',
+          'stackfood' => 'StackFood',
+          _ => 'Generic',
+        }, reason: builtIn.id);
+      }
+      expect(builtIns.where((p) => p.group == 'Generic'), hasLength(4));
+    },
+  );
+
+  test('built-in preset names are unique, ignoring case', () {
     final builtIns = PresetCodec.decode(
       File('assets/presets/builtin.json').readAsStringSync(),
     );
-    for (final builtIn in builtIns) {
-      expect(
-        builtIn.group,
-        builtIn.id.startsWith('builtin.6ammart.') ? '6amMart' : 'Generic',
-        reason: builtIn.id,
-      );
-    }
-    expect(builtIns.where((p) => p.group == 'Generic'), hasLength(4));
+    final seen = <String>{};
+    final duplicates = [
+      for (final builtIn in builtIns)
+        if (!seen.add(PresetCodec.normalizeName(builtIn.name))) builtIn.id,
+    ];
+    expect(duplicates, isEmpty);
   });
 
   group('import', () {

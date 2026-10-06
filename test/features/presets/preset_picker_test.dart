@@ -304,12 +304,12 @@ void main() {
       reason: 'the group typed exactly is not suggested',
     );
 
-    await tester.enterText(group, '  StackFood ');
+    await tester.enterText(group, '  MyShop ');
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(PresetDetailsDialog.nameKey), 'Mine');
     await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
     await settleAsync(tester);
-    expect(presets.state.userPresets.single.group, 'StackFood');
+    expect(presets.state.userPresets.single.group, 'MyShop');
   });
 
   testWidgets('the group suggestions never cover Save', (tester) async {

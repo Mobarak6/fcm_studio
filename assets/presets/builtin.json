@@ -881,6 +881,906 @@
       },
       "createdAt": "2026-10-04T00:00:00.000Z",
       "updatedAt": "2026-10-04T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.all.push_notification",
+      "name": "All apps · Admin push notification (topic)",
+      "group": "StackFood",
+      "description": "The admin's push notification from the Notifications page, sent to a topic: all_zone_customer, zone_<id>_customer, all_zone_restaurant, zone_<id>_restaurant, all_zone_delivery_man or zone_<id>_delivery_man.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Weekend offer"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Enjoy free delivery on all orders this weekend."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "order_id": "",
+          "type": "general",
+          "image": "{{image}}",
+          "body_loc_key": "general",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.all.maintenance",
+      "name": "All apps · Maintenance mode (silent)",
+      "group": "StackFood",
+      "description": "Data only, so no notification is shown. maintenance is sent when maintenance mode is turned on (\"maintenance mode\" / \"We are Working On Something Special!\") or off (\"We are back\" / \"Maintenance mode is removed\"), to the topics maintenance_mode_user_app, maintenance_mode_deliveryman_app and maintenance_mode_restaurant_app. stackfood_demo_reset (title and body \"demo_reset\") goes to the topic stackfood_demo_reset, on the demo server only.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "maintenance mode"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "We are Working On Something Special!"},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["maintenance", "stackfood_demo_reset"], "required": true, "defaultValue": "maintenance"}
+      ],
+      "template": {
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "type": "{{type}}",
+          "image": "",
+          "body_loc_key": "{{type}}"
+        }
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.user.order_status",
+      "name": "Customer app · Order status",
+      "group": "StackFood",
+      "description": "Sent on every order status change, and when a deliveryman accepts the order, the order is ready to be delivered, it is refunded, an offline payment is approved or rejected, or a dine-in table or token number is set. The body comes from the admin's Notification Messages. Titles: Order Notification, order ready to be delivered, order refunded, Your Offline payment was approved / rejected, Here is your Table and Token Number, Refund Rejected.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order Notification"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your order is confirmed."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "type": "order_status",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.user.message",
+      "name": "Customer app · Chat message",
+      "group": "StackFood",
+      "description": "A chat message from the admin, a restaurant (vendor) or a deliveryman (delivery_man). The body is the chat text, or \"<n> Attachments\". The web copy of a deliveryman's message goes to a topic, without conversation_id and sender_type.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "message description"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "conversation_id", "label": "Conversation ID", "type": "text", "required": true, "defaultValue": "55"},
+        {"key": "sender_type", "label": "Sender", "type": "enum", "options": ["admin", "vendor", "delivery_man"], "required": true, "defaultValue": "admin"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "message",
+          "conversation_id": "{{conversation_id}}",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "{{sender_type}}",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.user.wallet",
+      "name": "Customer app · Wallet & rewards",
+      "group": "StackFood",
+      "description": "add_fund: funds were added to the wallet. CashBack (spelled so by the backend): cashback earned on an order, with its order_id. referral_code: someone used your referral code (one path hard-codes order_id 1). referral_earn: a referral reward was earned. The amount is not sent; it is only in the body text.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Fund added"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Fund added to your wallet."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["add_fund", "CashBack", "referral_code", "referral_earn"], "required": true, "defaultValue": "add_fund"},
+        {"key": "order_id", "label": "Order ID (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "type": "{{type}}",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.user.account",
+      "name": "Customer app · Account (block, unblock)",
+      "group": "StackFood",
+      "description": "The admin blocked (block, title \"suspended\") or unblocked (unblock, title \"account activation\") the customer's account.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "suspended"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your account has been blocked."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["block", "unblock"], "required": true, "defaultValue": "block"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "{{type}}",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.user.subscription",
+      "name": "Customer app · Pro subscription & reminders",
+      "group": "StackFood",
+      "description": "StackFood Pro for customers: activated or renewed (customer_subscription_activated), expired, canceled, and the expiry reminder. data_id is the subscription id.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Subscription Activated"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your Pro subscription is now active."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["customer_subscription_activated", "subscription_expired", "subscription_canceled", "customer_subscription_expire_reminder"], "required": true, "defaultValue": "customer_subscription_activated"},
+        {"key": "data_id", "label": "Subscription ID", "type": "text", "required": true, "defaultValue": "12"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "{{type}}",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "{{data_id}}",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.user.cart_abandon",
+      "name": "Customer app · Cart abandon reminder",
+      "group": "StackFood",
+      "description": "Reminds a customer of the items left in the cart. The body is the admin's message with {userName} replaced.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Cart Abandon Reminder"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Hi John, you left items in your cart. Complete your order now!"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "cart_abandon",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.new_order",
+      "name": "Restaurant app · New order",
+      "group": "StackFood",
+      "description": "A new order for the restaurant app (vendors.firebase_token). The restaurant web panel gets the same order as a topic message: see \"Restaurant panel · New order (topic)\".",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New Order Notification"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new order."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "type": "new_order",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.order_status",
+      "name": "Restaurant app · Order picked up",
+      "group": "StackFood",
+      "description": "Sent to the restaurant only when the order status becomes picked_up.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order Notification"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "The order has been picked up by the deliveryman."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "type": "order_status",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.message",
+      "name": "Restaurant app · Chat message",
+      "group": "StackFood",
+      "description": "A chat message from the admin or a customer (user).",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "message description"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "conversation_id", "label": "Conversation ID", "type": "text", "required": true, "defaultValue": "55"},
+        {"key": "sender_type", "label": "Sender", "type": "enum", "options": ["admin", "user"], "required": true, "defaultValue": "admin"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "message",
+          "conversation_id": "{{conversation_id}}",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "{{sender_type}}",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.account",
+      "name": "Restaurant app · Account (block, unblock)",
+      "group": "StackFood",
+      "description": "The admin blocked (block, title \"suspended\") or unblocked (unblock, title \"Account Activation\") the restaurant.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "suspended"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your restaurant has been blocked."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["block", "unblock"], "required": true, "defaultValue": "block"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "{{type}}",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.withdraw",
+      "name": "Restaurant app · Withdraw approved / rejected",
+      "group": "StackFood",
+      "description": "The admin approved or rejected a withdraw request. Titles: Withdraw approved, Withdraw rejected.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Withdraw approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your withdraw request has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "withdraw",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.advertisement",
+      "name": "Restaurant app · Advertisement",
+      "group": "StackFood",
+      "description": "Titles: New Advertisement, Advertisement Approved, Advertisement Denied, Advertisement Paused, Advertisement Resumed. advertisement_id is the ad's id.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Advertisement Approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your advertisement has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "advertisement_id", "label": "Advertisement ID", "type": "text", "required": true, "defaultValue": "8"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "advertisement",
+          "conversation_id": "",
+          "advertisement_id": "{{advertisement_id}}",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.subscription",
+      "name": "Restaurant app · Subscription",
+      "group": "StackFood",
+      "description": "The restaurant's business plan. Titles: subscription successful, subscription renewed, subscription shifted, subscription plan updated, subscription canceled.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "subscription successful"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your subscription plan is now active."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "subscription",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.promotion",
+      "name": "Restaurant app · Promotion request (campaign, BOGO, happy hour)",
+      "group": "StackFood",
+      "description": "The admin's answer to the restaurant's request to join a promotion. data_id is the campaign, BOGO offer or happy hour id. Titles: Campaign Request Approved / Rejected; BOGO Request, BOGO Request Approved / Rejected, BOGO Offer Withdrawn; Happy Hour Request, Happy Hour Request Approved / Rejected.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Campaign Request Approved"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your request to join the campaign has been approved."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["campaign", "bogo_offer", "happy_hour"], "required": true, "defaultValue": "campaign"},
+        {"key": "data_id", "label": "Campaign, BOGO or happy hour ID", "type": "text", "required": true, "defaultValue": "3"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "{{type}}",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "{{data_id}}",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.promotion_new",
+      "name": "Restaurant app · New BOGO / happy hour available (topic)",
+      "group": "StackFood",
+      "description": "A new promotion restaurants can join. bogo_offer goes to the topic all_zone_restaurant; happy_hour (\"New Happy Hour Available\") goes to zone_<id>_restaurant. The offer id is not sent.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New BOGO Available"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "A new BOGO is available. Enroll now to boost your sales"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["bogo_offer", "happy_hour"], "required": true, "defaultValue": "bogo_offer"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "order_id": "",
+          "order_type": "",
+          "type": "{{type}}",
+          "image": "{{image}}",
+          "title_loc_key": "",
+          "body_loc_key": "{{type}}",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.restaurant.verified_badge",
+      "name": "Restaurant app · Verified badge",
+      "group": "StackFood",
+      "description": "The admin verified the restaurant, or removed the badge (title \"Removed\", body \"Your restaurant account is no longer verified.\").",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Verified"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Congratulations! Your restaurant account is now verified."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "verified_badge",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.panel.new_order",
+      "name": "Restaurant panel · New order (topic)",
+      "group": "StackFood",
+      "description": "Web push for the restaurant web panel, to the topic restaurant_panel_<restaurant id>_message. click_action opens the panel's order list.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New Order Notification"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "You have a new order."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"},
+        {"key": "click_action", "label": "Click URL", "type": "text", "required": false, "defaultValue": "https://example.com/restaurant-panel/order/list/all"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "order_id": "{{order_id}}",
+          "order_type": "",
+          "type": "new_order",
+          "image": "{{image}}",
+          "title_loc_key": "{{order_id}}",
+          "body_loc_key": "new_order",
+          "click_action": "{{click_action}}",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.delivery.order_request",
+      "name": "Deliveryman app · New order request (topic)",
+      "group": "StackFood",
+      "description": "A new order for the deliverymen of a zone (the zone's topic, delivery_man_<zone>_<vehicle>_<shift> or delivery_man_<zone>_<vehicle>), or of one restaurant (restaurant_dm_<restaurant id>), which may send new_order instead of order_request.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New Order Notification"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "A new order is waiting for a deliveryman."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["order_request", "new_order"], "required": true, "defaultValue": "order_request"},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"},
+        {"key": "order_type", "label": "Order type (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "order_id": "{{order_id}}",
+          "order_type": "{{order_type}}",
+          "type": "{{type}}",
+          "image": "{{image}}",
+          "title_loc_key": "{{order_id}}",
+          "body_loc_key": "{{type}}",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.delivery.order_status",
+      "name": "Deliveryman app · Order status",
+      "group": "StackFood",
+      "description": "Sent to the deliveryman while the order is processing or handed over.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order Notification"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "The order is being processed."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "{{order_id}}",
+          "type": "order_status",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.delivery.assign",
+      "name": "Deliveryman app · Order assigned / unassigned",
+      "group": "StackFood",
+      "description": "The admin or the restaurant assigned an order to the deliveryman (assign, title \"Order Assigned\") or took it back (unassign, title \"order unassigned\"). order_id is sent empty; the order id is only in the body.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order Assigned"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Order #100045 has been assigned to you."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["assign", "unassign"], "required": true, "defaultValue": "assign"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "{{type}}",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.delivery.cash_collect",
+      "name": "Deliveryman app · Cash collected",
+      "group": "StackFood",
+      "description": "The admin collected cash in hand from the deliveryman.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Cash Collected"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "The admin collected cash from you."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "cash_collect",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.delivery.shift",
+      "name": "Deliveryman app · Shift updated",
+      "group": "StackFood",
+      "description": "The admin changed the deliveryman's shift. The backend spells the type delivery_nam_shift_update.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Shift updated"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your shift has been updated"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "delivery_nam_shift_update",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.delivery.account",
+      "name": "Deliveryman app · Account (block, unblock)",
+      "group": "StackFood",
+      "description": "The admin or the restaurant blocked (block, title \"suspended\") or unblocked (unblock, title \"Account activation\") the deliveryman.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "suspended"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "Your account has been blocked."},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "type", "label": "Type", "type": "enum", "options": ["block", "unblock"], "required": true, "defaultValue": "block"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "{{type}}",
+          "conversation_id": "",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.delivery.message",
+      "name": "Deliveryman app · Chat message",
+      "group": "StackFood",
+      "description": "A chat message from a customer (sender_type user).",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "message description"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "conversation_id", "label": "Conversation ID", "type": "text", "required": true, "defaultValue": "55"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "image": "{{image}}",
+          "order_id": "",
+          "type": "message",
+          "conversation_id": "{{conversation_id}}",
+          "advertisement_id": "",
+          "data_id": "",
+          "sender_type": "user",
+          "order_type": "",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.admin.new_order",
+      "name": "Admin panel · New order (topic)",
+      "group": "StackFood",
+      "description": "Web push for the admin panel, to the topic admin_message. click_action opens the admin's order list.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New Order Notification"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "New order alert, confirm to proceed"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""},
+        {"key": "order_id", "label": "Order ID", "type": "text", "required": true, "defaultValue": "100045"},
+        {"key": "click_action", "label": "Click URL", "type": "text", "required": false, "defaultValue": "https://example.com/admin/order/list/all"}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "order_id": "{{order_id}}",
+          "order_type": "",
+          "type": "order_request",
+          "image": "{{image}}",
+          "title_loc_key": "{{order_id}}",
+          "body_loc_key": "order_request",
+          "click_action": "{{click_action}}",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "id": "builtin.stackfood.admin.message",
+      "name": "Admin panel · Chat message (topic)",
+      "group": "StackFood",
+      "description": "A chat message from a customer or a restaurant, to the topic admin_message. The restaurant web panel sends the chat text as the body.",
+      "variables": [
+        {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "message"},
+        {"key": "body", "label": "Body", "type": "multiline", "required": true, "defaultValue": "message description"},
+        {"key": "image", "label": "Image URL (optional)", "type": "text", "required": false, "defaultValue": ""}
+      ],
+      "template": {
+        "notification": {"title": "{{title}}", "body": "{{body}}", "image": "{{image}}"},
+        "data": {
+          "title": "{{title}}",
+          "body": "{{body}}",
+          "order_id": "",
+          "order_type": "",
+          "type": "message",
+          "image": "{{image}}",
+          "title_loc_key": "",
+          "body_loc_key": "message",
+          "click_action": "",
+          "sound": "notification.wav"
+        },
+        "android": {"notification": {"channel_id": "stackfood"}},
+        "apns": {"payload": {"aps": {"sound": "notification.wav"}}}
+      },
+      "createdAt": "2026-10-06T00:00:00.000Z",
+      "updatedAt": "2026-10-06T00:00:00.000Z"
     }
   ]
 }
