@@ -239,4 +239,28 @@ void main() {
       expect(result.map((p) => p.id).toSet(), hasLength(2));
     });
   });
+
+  group('group', () {
+    Map<String, Object?> json({Object? group}) => {
+      ...(preset.toJson()..remove('group')),
+      'group': ?group,
+    };
+
+    test('is empty when missing or not a string, and trimmed', () {
+      expect(Preset.fromJson(json()).group, '');
+      expect(Preset.fromJson(json(group: 42)).group, '');
+      expect(Preset.fromJson(json(group: '  StackFood ')).group, 'StackFood');
+    });
+
+    test('travels in an export file', () {
+      final text = PresetCodec.encode([
+        preset.copyWith(group: 'StackFood'),
+      ], exportedAt: created);
+      final file = jsonDecode(text) as Map<String, Object?>;
+      final first =
+          (file['presets']! as List<Object?>).first! as Map<String, Object?>;
+      expect(first['group'], 'StackFood');
+      expect(PresetCodec.decode(text).single.group, 'StackFood');
+    });
+  });
 }

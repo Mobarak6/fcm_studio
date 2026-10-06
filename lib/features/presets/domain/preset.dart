@@ -14,6 +14,7 @@ class Preset extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.description = '',
+    this.group = '',
     this.variables = const [],
     this.builtIn = false,
   });
@@ -62,10 +63,12 @@ class Preset extends Equatable {
       variables.add(variable);
     }
     final description = json['description'];
+    final group = json['group'];
     return Preset(
       id: id,
       name: name.trim(),
       description: description is String ? description : '',
+      group: group is String ? group.trim() : '',
       variables: variables,
       template: template,
       builtIn: json['builtIn'] == true,
@@ -77,6 +80,9 @@ class Preset extends Equatable {
   final String id;
   final String name;
   final String description;
+
+  /// The group the preset is listed under, stored trimmed. '' is No group.
+  final String group;
   final List<VariableDef> variables;
 
   /// The FCM `message` object without the target.
@@ -115,6 +121,7 @@ class Preset extends Equatable {
     String? id,
     String? name,
     String? description,
+    String? group,
     List<VariableDef>? variables,
     Map<String, Object?>? template,
     bool? builtIn,
@@ -124,6 +131,7 @@ class Preset extends Equatable {
     id: id ?? this.id,
     name: name ?? this.name,
     description: description ?? this.description,
+    group: group ?? this.group,
     variables: variables ?? this.variables,
     template: template ?? this.template,
     builtIn: builtIn ?? this.builtIn,
@@ -136,6 +144,7 @@ class Preset extends Equatable {
     'id': id,
     'name': name,
     'description': description,
+    'group': group,
     'variables': [for (final v in variables) v.toJson()],
     'template': template,
     'builtIn': builtIn,
@@ -148,6 +157,7 @@ class Preset extends Equatable {
     id,
     name,
     description,
+    group,
     variables,
     template,
     builtIn,
