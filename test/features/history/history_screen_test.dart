@@ -156,11 +156,13 @@ void main() {
       find.byKey(PresetDetailsDialog.nameKey),
       'From history',
     );
+    await tester.enterText(find.byKey(PresetDetailsDialog.groupKey), 'Ops');
     await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
     await settleAsync(tester);
     final saved = readCubit<PresetsCubit>(tester).state.userPresets.single;
     expect(saved.name, 'From history');
     expect(saved.variables, isEmpty);
+    expect(saved.group, 'Ops');
     expect(saved.template, {
       'notification': {'title': 'Order shipped'},
     });

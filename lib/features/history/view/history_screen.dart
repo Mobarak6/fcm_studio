@@ -362,6 +362,7 @@ class HistoryTile extends StatelessWidget {
       context,
       title: 'Save as preset',
       isNameTaken: presets.state.nameTaken,
+      groups: presets.state.groupNames,
     );
     if (details == null) {
       return;
@@ -370,6 +371,7 @@ class HistoryTile extends StatelessWidget {
       await presets.saveAs(
         name: details.name,
         description: details.description,
+        group: details.group,
         template: entry.template,
         variables: const [],
       );

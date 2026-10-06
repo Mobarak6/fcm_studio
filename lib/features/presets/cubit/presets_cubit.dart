@@ -55,6 +55,7 @@ class PresetsCubit extends Cubit<PresetsState> {
     required Map<String, Object?> template,
     required List<VariableDef> variables,
     String description = '',
+    String group = '',
   }) async {
     _checkTemplate(template);
     final now = _clock.now();
@@ -62,6 +63,7 @@ class PresetsCubit extends Cubit<PresetsState> {
       id: _newId(),
       name: name.trim(),
       description: description.trim(),
+      group: group.trim(),
       variables: variables,
       template: template,
       createdAt: now,
@@ -115,14 +117,17 @@ class PresetsCubit extends Cubit<PresetsState> {
     return copy;
   }
 
+  /// "Edit details": a new name, description and group.
   Future<Preset> rename(
     Preset preset, {
     required String name,
     required String description,
+    required String group,
   }) async {
     final renamed = preset.copyWith(
       name: name.trim(),
       description: description.trim(),
+      group: group.trim(),
       updatedAt: _clock.now(),
     );
     await _repository.save(renamed);

@@ -259,4 +259,74 @@ void main() {
     await tester.pumpAndSettle();
     expect(composer.state.preset?.id, 'builtin.data_only');
   });
+
+  testWidgets("Save as starts with the loaded preset's group", (tester) async {
+    final (_, composer) = await pumpAppWithProject(tester);
+    final presets = readCubit<PresetsCubit>(tester);
+    composer
+      ..loadPreset(presets.state.byId('builtin.simple')!)
+      ..setField(['notification', 'body'], 'Changed');
+    await tester.pump();
+
+    await tester.tap(find.byKey(PresetPicker.saveAsKey));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(PresetDetailsDialog.groupKey))
+          .controller!
+          .text,
+      'Generic',
+    );
+    await tester.enterText(find.byKey(PresetDetailsDialog.nameKey), 'Mine');
+    await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
+    await settleAsync(tester);
+    expect(presets.state.userPresets.single.group, 'Generic');
+  });
+
+  testWidgets('the Group field suggests existing groups and trims', (
+    tester,
+  ) async {
+    await pumpAppWithProject(tester);
+    final presets = readCubit<PresetsCubit>(tester);
+    await tester.tap(find.byKey(PresetPicker.saveAsKey));
+    await tester.pumpAndSettle();
+    final group = find.byKey(PresetDetailsDialog.groupKey);
+    Finder suggestion(String text) => find.widgetWithText(InkWell, text);
+
+    await tester.enterText(group, '6AM');
+    await tester.pumpAndSettle();
+    expect(suggestion('6amMart'), findsOneWidget);
+    expect(suggestion('Generic'), findsNothing);
+
+    await tester.tap(suggestion('6amMart'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(group).controller!.text, '6amMart');
+    expect(
+      suggestion('6amMart'),
+      findsNothing,
+      reason: 'the group typed exactly is not suggested',
+    );
+
+    await tester.enterText(group, '  StackFood ');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(PresetDetailsDialog.nameKey), 'Mine');
+    await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
+    await settleAsync(tester);
+    expect(presets.state.userPresets.single.group, 'StackFood');
+  });
+
+  testWidgets('the group suggestions never cover Save', (tester) async {
+    await pumpAppWithProject(tester);
+    final presets = readCubit<PresetsCubit>(tester);
+    await tester.tap(find.byKey(PresetPicker.saveAsKey));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(PresetDetailsDialog.nameKey), 'Mine');
+    await tester.tap(find.byKey(PresetDetailsDialog.groupKey));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(InkWell, '6amMart'), findsOneWidget);
+
+    await tester.tap(find.byKey(PresetDetailsDialog.saveKey).hitTestable());
+    await settleAsync(tester);
+    expect(presets.state.userPresets.single.name, 'Mine');
+  });
 }

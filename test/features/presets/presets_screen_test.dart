@@ -198,9 +198,17 @@ void main() {
 
     await tester.tap(find.byKey(ValueKey('preset-menu-${mine.id}')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Rename…'));
+    await tester.tap(find.text('Edit details…'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(PresetDetailsDialog.nameKey), 'Renamed');
+    expect(
+      tester
+          .widget<TextField>(find.byKey(PresetDetailsDialog.groupKey))
+          .controller!
+          .text,
+      '',
+    );
+    await tester.enterText(find.byKey(PresetDetailsDialog.groupKey), 'Ops');
     await tester.tap(find.byKey(PresetDetailsDialog.saveKey));
     await settleAsync(tester);
     expect(composer.state.preset?.name, 'Renamed');
@@ -213,6 +221,7 @@ void main() {
 
     final stored = presets.state.userPresets.single;
     expect(stored.name, 'Renamed');
+    expect(stored.group, 'Ops');
     expect(stored.template, {
       'notification': {'title': 'B'},
     });

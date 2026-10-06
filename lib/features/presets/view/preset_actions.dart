@@ -62,6 +62,9 @@ Future<void> savePresetAs(BuildContext context) async {
     context,
     title: 'Save as preset',
     isNameTaken: presets.state.nameTaken,
+    // A changed 6amMart preset is saved as a 6amMart preset unless changed.
+    group: composer.state.preset?.group ?? '',
+    groups: presets.state.groupNames,
   );
   if (details == null) {
     return;
@@ -70,6 +73,7 @@ Future<void> savePresetAs(BuildContext context) async {
     final saved = await presets.saveAs(
       name: details.name,
       description: details.description,
+      group: details.group,
       template: template,
       variables: composer.state.variables,
     );

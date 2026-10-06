@@ -119,7 +119,7 @@ void main() {
       template: template,
       variables: variables,
     );
-    await cubit.rename(saved, name: 'B', description: 'Renamed');
+    await cubit.rename(saved, name: 'B', description: 'Renamed', group: 'G');
     final updated = await cubit.update(
       saved.id,
       template: const {
@@ -129,6 +129,7 @@ void main() {
     );
     expect(updated.name, 'B');
     expect(updated.description, 'Renamed');
+    expect(updated.group, 'G');
     expect(updated.createdAt, saved.createdAt);
     expect(cubit.state.userPresets.single, updated);
   });
@@ -232,7 +233,12 @@ void main() {
     expect(cubit.state.nameTaken('a', exceptId: saved.id), isFalse);
     expect(cubit.state.nameTaken('SIMPLE NOTIFICATION'), isTrue);
 
-    final renamed = await cubit.rename(saved, name: 'B', description: 'Mine');
+    final renamed = await cubit.rename(
+      saved,
+      name: 'B',
+      description: 'Mine',
+      group: '',
+    );
     expect(cubit.state.userPresets.single.name, 'B');
     expect(cubit.state.userPresets.single.description, 'Mine');
 
@@ -301,4 +307,35 @@ void main() {
     );
     expect(cubit.state.userPresets, isEmpty);
   });
+
+  test(
+    'Save as and rename store the group trimmed; duplicate keeps it',
+    () async {
+      final cubit = await loaded();
+      final saved = await cubit.saveAs(
+        name: 'A',
+        group: ' StackFood ',
+        template: template,
+        variables: variables,
+      );
+      expect(saved.group, 'StackFood');
+
+      final moved = await cubit.rename(
+        saved,
+        name: 'A',
+        description: '',
+        group: ' Food ',
+      );
+      expect(moved.group, 'Food');
+
+      final copy = await cubit.duplicate(cubit.state.byId('builtin.simple')!);
+      expect(copy.group, 'Generic');
+
+      final restarted = await loaded();
+      expect(
+        restarted.state.userPresets.map((p) => p.group),
+        unorderedEquals(['Food', 'Generic']),
+      );
+    },
+  );
 }

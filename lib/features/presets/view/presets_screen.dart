@@ -121,9 +121,11 @@ class _PresetsScreenState extends State<PresetsScreen> {
           case PresetAction.edit:
             final details = await showPresetDetailsDialog(
               context,
-              title: 'Rename preset',
+              title: 'Edit details',
               name: preset.name,
               description: preset.description,
+              group: preset.group,
+              groups: presets.state.groupNames,
               isNameTaken: (name) =>
                   presets.state.nameTaken(name, exceptId: preset.id),
             );
@@ -132,6 +134,7 @@ class _PresetsScreenState extends State<PresetsScreen> {
                 preset,
                 name: details.name,
                 description: details.description,
+                group: details.group,
               );
               composer.presetUpdated(renamed);
             }
@@ -328,7 +331,7 @@ class _PresetTile extends StatelessWidget {
           if (!preset.builtIn)
             const PopupMenuItem(
               value: PresetAction.edit,
-              child: Text('Rename…'),
+              child: Text('Edit details…'),
             ),
           const PopupMenuItem(
             value: PresetAction.export,
