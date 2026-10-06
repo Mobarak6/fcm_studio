@@ -139,6 +139,20 @@ void main() {
     }
   });
 
+  test('the built-in presets are in the groups Generic and 6amMart', () {
+    final builtIns = PresetCodec.decode(
+      File('assets/presets/builtin.json').readAsStringSync(),
+    );
+    for (final builtIn in builtIns) {
+      expect(
+        builtIn.group,
+        builtIn.id.startsWith('builtin.6ammart.') ? '6amMart' : 'Generic',
+        reason: builtIn.id,
+      );
+    }
+    expect(builtIns.where((p) => p.group == 'Generic'), hasLength(4));
+  });
+
   group('import', () {
     var counter = 0;
     String newId() => 'new-${++counter}';

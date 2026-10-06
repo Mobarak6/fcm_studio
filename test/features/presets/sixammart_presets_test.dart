@@ -177,7 +177,8 @@ const backendTypes = {
 };
 
 const namePrefixes = {
-  'all': '6amMart · ',
+  // The group says "6amMart", so the presets for every app have no prefix.
+  'all': '',
   'user': 'User app · ',
   'delivery': 'Delivery app · ',
   'store': 'Store app · ',
@@ -226,8 +227,13 @@ void main() {
     for (final preset in presets) {
       final app = preset.id.split('.')[2];
       expect(preset.name, startsWith(namePrefixes[app]!), reason: preset.id);
+      expect(preset.name, isNot(startsWith('6amMart')), reason: preset.id);
       expect(preset.description, isNotEmpty, reason: preset.id);
     }
+  });
+
+  test('they are all in the 6amMart group', () {
+    expect({for (final preset in presets) preset.group}, {'6amMart'});
   });
 
   test('every type is one the backend sends, and all of them are covered', () {

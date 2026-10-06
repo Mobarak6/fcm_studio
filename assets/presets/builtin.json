@@ -6,6 +6,7 @@
     {
       "id": "builtin.simple",
       "name": "Simple notification",
+      "group": "Generic",
       "description": "A title and a body.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Hello from FCM Studio"},
@@ -20,6 +21,7 @@
     {
       "id": "builtin.image",
       "name": "Notification with image",
+      "group": "Generic",
       "description": "A notification with a large image. iOS needs a notification service extension to show it.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Hello from FCM Studio"},
@@ -39,6 +41,7 @@
     {
       "id": "builtin.notification_data",
       "name": "Notification + data",
+      "group": "Generic",
       "description": "A notification plus key/value data the app reads when it is tapped.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Your order has shipped"},
@@ -57,6 +60,7 @@
     {
       "id": "builtin.data_only",
       "name": "Data only (silent / background)",
+      "group": "Generic",
       "description": "No visible notification. The app receives the data in the background.",
       "variables": [
         {"key": "type", "label": "Type", "type": "text", "required": false, "defaultValue": "sync"}
@@ -74,7 +78,8 @@
     },
     {
       "id": "builtin.6ammart.all.push_notification",
-      "name": "6amMart · Admin push notification (topic)",
+      "name": "Admin push notification (topic)",
+      "group": "6amMart",
       "description": "What Admin panel > Push notification sends to a topic such as all_zone_customer, zone_<id>_customer, all_zone_delivery_man or all_zone_store. Every app shows it and opens the notification list on tap. Rental admin pushes use the type general.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Weekend offer"},
@@ -101,7 +106,8 @@
     },
     {
       "id": "builtin.6ammart.all.maintenance",
-      "name": "6amMart · Maintenance mode (silent)",
+      "name": "Maintenance mode (silent)",
+      "group": "6amMart",
       "description": "Data only, so no notification is shown. maintenance (sent when maintenance mode is turned on or off) makes the apps reload their settings; demo_reset makes the user app show the demo reset dialog. Topics: maintenance_mode_user_app, maintenance_mode_deliveryman_app, maintenance_mode_vendor_app, maintenance_mode_rider_app, demo_reset.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Maintenance mode"},
@@ -123,6 +129,7 @@
     {
       "id": "builtin.6ammart.user.order_status",
       "name": "User app · Order status",
+      "group": "6amMart",
       "description": "Sent to the customer when an order changes status. Tapping opens the order details (guests go to the orders tab), and the app reloads its order lists.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order confirmed"},
@@ -160,6 +167,7 @@
     {
       "id": "builtin.6ammart.user.message",
       "name": "User app · Chat message",
+      "group": "6amMart",
       "description": "A new chat message from a store (vendor), deliveryman or admin. Tapping opens the conversation; while that chat is open the app reloads the messages instead.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New message"},
@@ -196,6 +204,7 @@
     {
       "id": "builtin.6ammart.user.wallet",
       "name": "User app · Wallet & rewards",
+      "group": "6amMart",
       "description": "add_fund (also used for wallet debits) and cashback open the wallet; loyalty_point opens loyalty points; referral_code and wallet_transfer open the notification list. add_fund, cashback and loyalty_point also reload the profile.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Fund added"},
@@ -232,6 +241,7 @@
     {
       "id": "builtin.6ammart.user.account",
       "name": "User app · Account (block, unblock, OTP)",
+      "group": "6amMart",
       "description": "block and unblock open the sign-in screen on tap. otp carries a delivery OTP for the customer; tapping it does nothing.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Account blocked"},
@@ -267,6 +277,7 @@
     {
       "id": "builtin.6ammart.user.subscription",
       "name": "User app · Pro subscription & reminders",
+      "group": "6amMart",
       "description": "Pro customer subscription updates and the monthly order reminder. Shown as a normal notification; tapping opens the notification list.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Subscription activated"},
@@ -302,6 +313,7 @@
     {
       "id": "builtin.6ammart.user.trip_status",
       "name": "User app · Rental trip status",
+      "group": "6amMart",
       "description": "A rental trip changed status; the trip ID goes in order_id. Tapping opens the trip details. With the status completed and the app open, the app shows the payment sheet.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Trip confirmed"},
@@ -338,6 +350,7 @@
     {
       "id": "builtin.6ammart.user.coupon",
       "name": "User app · New coupon (topic)",
+      "group": "6amMart",
       "description": "Sent to every customer in the store's zone when a store adds or updates a coupon. Tapping opens the notification list.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New coupon"},
@@ -367,6 +380,7 @@
     {
       "id": "builtin.6ammart.user.interest",
       "name": "User app · New item for your interests (topic)",
+      "group": "6amMart",
       "description": "Sent to customers who follow a category when a store adds an item in it. Tapping opens the notification list.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New item"},
@@ -396,6 +410,7 @@
     {
       "id": "builtin.6ammart.delivery.order_request",
       "name": "Delivery app · New order request (topic)",
+      "group": "6amMart",
       "description": "A new order for the deliverymen of a zone (topic zone_<id>_delivery_man) or of one store (restaurant_dm_<store id>, which may send new_order). With the app open it shows the new request dialog; in the background order_request starts the ringing alert. The order types parcel_order and prescription hide the item count.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New order request"},
@@ -432,6 +447,7 @@
     {
       "id": "builtin.6ammart.delivery.assign",
       "name": "Delivery app · Order assigned",
+      "group": "6amMart",
       "description": "A delivery company assigned an order to the deliveryman (the admin panel sends order_status instead). With the app open it shows the assigned order dialog; tapping opens the order details.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order assigned"},
@@ -467,6 +483,7 @@
     {
       "id": "builtin.6ammart.delivery.order_status",
       "name": "Delivery app · Order status / unassigned",
+      "group": "6amMart",
       "description": "order_status: an order was assigned (from the admin panel) or changed; tapping opens the order details, and in the background it starts the ringing alert. unassign: the order was taken away; tapping opens the order requests tab.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order assigned"},
@@ -503,6 +520,7 @@
     {
       "id": "builtin.6ammart.delivery.message",
       "name": "Delivery app · Chat message",
+      "group": "6amMart",
       "description": "A new chat message from a customer (sender user), store (vendor) or admin. Tapping opens the conversation.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New message"},
@@ -539,6 +557,7 @@
     {
       "id": "builtin.6ammart.delivery.earnings",
       "name": "Delivery app · Earnings & wallet",
+      "group": "6amMart",
       "description": "withdraw (request approved or denied) opens My account; cash_collect, deliveryman_referral and loyalty_point open the notification list.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Withdraw request approved"},
@@ -574,6 +593,7 @@
     {
       "id": "builtin.6ammart.delivery.account",
       "name": "Delivery app · Account (block, unblock)",
+      "group": "6amMart",
       "description": "Careful: with the app open, block signs the deliveryman out at once. Tapping either one opens the sign-in screen.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Account blocked"},
@@ -609,6 +629,7 @@
     {
       "id": "builtin.6ammart.store.new_order",
       "name": "Store app · New order",
+      "group": "6amMart",
       "description": "A customer placed an order with the store (store employees get it too). With the app open it shows the new order dialog; in the background it starts the ringing alert. Tapping opens the order details.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New order placed"},
@@ -646,6 +667,7 @@
     {
       "id": "builtin.6ammart.store.order_status",
       "name": "Store app · Order status",
+      "group": "6amMart",
       "description": "An order changed status. Tapping opens the order details (the trip or booking in the rental and service modules); in the background it starts the ringing alert.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Order status updated"},
@@ -681,6 +703,7 @@
     {
       "id": "builtin.6ammart.store.message",
       "name": "Store app · Chat message",
+      "group": "6amMart",
       "description": "A new chat message from a customer (sender user) or a deliveryman. Tapping opens the conversation.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "New message"},
@@ -718,6 +741,7 @@
     {
       "id": "builtin.6ammart.store.items",
       "name": "Store app · Item approved / rejected",
+      "group": "6amMart",
       "description": "product_approve opens the store's item list; product_rejected opens the pending items.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Item approved"},
@@ -753,6 +777,7 @@
     {
       "id": "builtin.6ammart.store.advertisement",
       "name": "Store app · Advertisement",
+      "group": "6amMart",
       "description": "An advertisement was created, approved, denied or paused. Tapping opens the advertisement details, and the app reloads the list.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Advertisement approved"},
@@ -788,6 +813,7 @@
     {
       "id": "builtin.6ammart.store.campaign",
       "name": "Store app · Campaign",
+      "group": "6amMart",
       "description": "The store's request to join a campaign was approved or rejected. Tapping opens the campaign details; the campaign ID goes in data_id.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Campaign request approved"},
@@ -823,6 +849,7 @@
     {
       "id": "builtin.6ammart.store.account",
       "name": "Store app · Account & business",
+      "group": "6amMart",
       "description": "subscription opens My subscription; withdraw opens the wallet tab; block and unblock open the sign-in screen; verified_badge opens the notification list.",
       "variables": [
         {"key": "title", "label": "Title", "type": "text", "required": true, "defaultValue": "Subscription renewed"},
